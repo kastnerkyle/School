@@ -5,13 +5,33 @@ import scipy.stats as st
 import matplotlib.pyplot as plot 
 import random  
 
-def sigma_posterior(samp_vec):
-    mag = np.vdot(samp_vec, samp_vec)
-    return st.invgamma.pdf( len(samp_vec)/2, mag/2 )
+#Scipy.stats implementation is a one parameter, need to feed second value as scale
+def update_var_est(samp_vec,mean_est):
+     n = float(len(samp_vec))
+     v = sum([np.square(x-mean_est)/n for x in samp_vec]) 
+     return st.invgamma.rvs(n/2, scale=n*v/2)
 
-rand = [10*(random.random()-.5) for y in range(1000)]
-vec = [st.norm.pdf(x) for x in rand]
+def update_mean_est(samp_vec,var_est):
+     n = float(len(samp_vec))
+     samp_mean = np.mean(samp_vec)
+     return st.norm.rvs(samp_mean, var_est/n)
 
-plot.plot(vec)
+true_mean = 25
+true_var = 3
+
+#There is a square somewhere that is making things weird
+samples = st.norm.rvs(25, np.sqrt(3), size=1000)
+
+mean_est = random.random()
+var_est = random.random()
+
+run = 5000
+
+for i in range(run):
+    mean_est = update_mean_est(samples, var_est)
+    var_est = update_var_est(samples, mean_est)
+
+print mean_est
+print var_est
+plot.hist(samples)
 plot.show()
-print sigma_posterior(vec)
