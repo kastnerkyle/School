@@ -1,9 +1,12 @@
 #!/usr/bin/python
 
+import sys
 import numpy as np
+import scipy.signal as sig
 import scipy.stats as st
 import matplotlib.pyplot as plot 
 import random  
+from multiprocessing import Pool
 
 def update_var_est(samp_vec, mean_est):
     n = float(len(samp_vec))
@@ -23,23 +26,22 @@ def estimate(samp_vec):
     for i in range(run):
         var_est = update_var_est(samp_vec, mean_est)
         mean_est = update_mean_est(samp_vec, var_est)
-    print mean_est
-    print var_est
+    return ("ESTIMATED MEAN: " + `mean_est`, "ESTIMATED VAR:  " + `var_est`)
 
 #means spaced from 1 to 100
 sample_count = 1000
-n = 5
-true_means = np.linspace(1,100, num=n)
+true_means = np.arange(180,1000,2*60)
 
-#variances randomly distributed around 5
-true_vars = 2+np.random.randn(np.size(true_means))
-samples_list = [x[0] + x[1]*np.random.randn(sample_count/n) for x in zip(true_means, true_vars)]
-samples = np.concatenate(samples_list)
-(count, bins) = np.histogram(samples, 1000)
-a = np.correlate(count, count, mode='full')
-len(samples)
-#plot.plot(.5*(bins[1:]+bins[:-1]), count)
-plot.plot(a)
-plot.show()
-#samples = st.norm.rvs(true_mean, np.sqrt(true_var), size=1000)
-#estimate(samples)
+#variances randomly distributed around 4
+true_vars = 4+np.random.randn(np.size(true_means))
+samples_list = [x[0]+ np.sqrt(x[1])*np.random.randn(sample_count)
+                for x in zip(true_means, true_vars)]
+
+actuals = [("TRUE MEAN: " + `x[0]`, "TRUE VAR: " + `x[1]`)
+           for x in zip(true_means, true_vars)] 
+
+p = Pool()
+estimates = p.map(estimate, samples_list)
+for i,j in zip(estimates, actuals):
+   print i
+   print j
