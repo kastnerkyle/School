@@ -32,8 +32,8 @@ def estimate(samp_vec):
 sample_count = 1000
 true_means = np.arange(180,1000,2*60)
 
-#variances randomly distributed around 4
-true_vars = 4+np.random.randn(np.size(true_means))
+#variances randomly distributed around 40
+true_vars = 40+np.random.randn(np.size(true_means))
 samples_list = [x[0]+ np.sqrt(x[1])*np.random.randn(sample_count)
                 for x in zip(true_means, true_vars)]
 
