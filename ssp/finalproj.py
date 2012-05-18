@@ -13,19 +13,31 @@ class gaussian_peak:
     def func(self, x):
         return self.height * np.exp(-np.square(x-self.mean)/(2*self.var))
 
+def update_h_est():
+    return 0
+
+def estimate(samp_vec,n1,n2,n3):
+    est = update_h_est()
+    return est
+
+
 #means spaced from 1 to 100
 sample_count = 1000
 true_heights = [5., 12., 6.]
 true_means = [10., 22., 6.]
 true_vars = [.5, .5, .5]
 
-[n1, n2, n3] = [gaussian_peak(h, m, v) for h, m, v in zip(true_heights, true_means, true_vars)]
+[n1, n2, n3] = [gaussian_peak(h, m, v) 
+                for h, m, v in zip(true_heights, true_means, true_vars)]
 lb = min(true_means) - 6*max(true_vars) 
 ub = max(true_means) + 6*max(true_vars)
 r = np.arange(lb, ub, (ub-lb)/100)
 
-plot.plot(r, [n1.func(x) for x in r], "b",
-          r, [n2.func(x) for x in r], "g",
-          r, [n3.func(x) for x in r], "r")
+[n1_vec, n2_vec, n3_vec] = [[c.func(x) for x in r] for c in [n1, n2, n3]]
+samp_vec = sum([n1_vec, n2_vec, n3_vec], [])
+print samp_vec
+plot.plot(r, n1_vec, "b",
+          r, n2_vec, "g",
+          r, n3_vec, "r")
 plot.show()
 
