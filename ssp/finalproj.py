@@ -23,6 +23,7 @@ true_vars = [.5, .5, .5]
 lb = min(true_means) - 6*max(true_vars) 
 ub = max(true_means) + 6*max(true_vars)
 r = np.arange(lb, ub, (ub-lb)/100)
+
 plot.plot(r, [n1.func(x) for x in r], "b",
           r, [n2.func(x) for x in r], "g",
           r, [n3.func(x) for x in r], "r")
