@@ -4,6 +4,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plot 
 from multiprocessing import Pool
+
 class gaussian_peak:
     def __init__(self, height, mean, var):
         self.height = height
@@ -13,13 +14,14 @@ class gaussian_peak:
     def func(self, x):
         return self.height * np.exp(-np.square(x-self.mean)/(2*self.var))
 
-def update_h_est():
-    return 0
+def update_h_est(prev_est, *knowns ):
+    b = prev_est
+    a = -2*(knowns[0]*np.exp(
+    return 
 
 def estimate(samp_vec,n1,n2,n3):
     est = update_h_est()
     return est
-
 
 #means spaced from 1 to 100
 sample_count = 1000
