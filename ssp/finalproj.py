@@ -24,44 +24,43 @@ def update_var_est(samp_vec, mean_est):
 def update_mean_est(samp_vec, var_est):
     n = float(len(samp_vec))
     #Scale variable is standard deviation
-    return st.norm.rvs(np.mean(samp_vec), np.sqrt(var_est/n))
+    return st.norm.rvs(np.mean(samp_vec), scale=np.sqrt(var_est/n))
 
-def height_est(samp_vec, samp_x):
+def update_height_est(samp_vec, samp_x):
     #Get values for linear regression estimation 
     ys = np.matrix(samp_vec).transpose()
     xs = np.matrix(samp_x).transpose()
-    vbeta = (xs.transpose()*xs)**-1
+    vbeta = 1./(xs.transpose()*xs)
     beta = vbeta*xs.transpose()*ys
 
     s_2 = (ys-xs*beta).transpose()*(ys-xs*beta)
-    #var = inv chisq
-    var = 1    
-    return st.norm.rvs(beta, vbeta*var)
+    var = s_2/st.chi2.rvs(1)   
+    return st.norm.rvs(beta, scale=np.sqrt(vbeta*var))
 
 def estimate(samp_vec, samp_x):
     mean_est = random.random()
     var_est = random.random()
-    run = 1000
-    print height_est(samp_vec, samp_x)
+    run = 100
+    height_est = update_height_est(samp_vec, samp_x)
     for i in range(run):
         var_est = update_var_est(samp_vec, mean_est)
         mean_est = update_mean_est(samp_vec, var_est)
-    print var_est
+    print height_est
     print mean_est     
+    print var_est
 
 #means spaced from 1 to 100
 sample_count = 1000
-h = 20.
-m = 10.
-v = .5
+h = 1.
+m = 11.
+v = 3.
 
 n1 = gaussian_peak(h, m, v)
-lb = m - 6*v 
-ub = m + 6*v
-r = np.arange(lb, ub, (ub-lb)/100)
-
+r = st.norm.rvs(m, v, size=sample_count)
 n1_vec = [n1.func(x) for x in r]
+
+n1_vec = m + np.sqrt(v)*np.random.randn(sample_count)
 estimate(n1_vec, r)
-plot.plot(r, n1_vec, "b")
+plot.plot(r, np.ravel(n1_vec), "bo")
 plot.show()
 
