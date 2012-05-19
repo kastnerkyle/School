@@ -26,11 +26,23 @@ def update_mean_est(samp_vec, var_est):
     #Scale variable is standard deviation
     return st.norm.rvs(np.mean(samp_vec), np.sqrt(var_est/n))
 
+def height_est(samp_vec, samp_x):
+    #Get values for linear regression estimation 
+    ys = np.matrix(samp_vec).transpose()
+    xs = np.matrix(samp_x).transpose()
+    vbeta = (xs.transpose()*xs)**-1
+    beta = vbeta*xs.transpose()*ys
 
-def estimate(samp_vec):
+    s_2 = (ys-xs*beta).transpose()*(ys-xs*beta)
+    #var = inv chisq
+    var = 1    
+    return st.norm.rvs(beta, vbeta*var)
+
+def estimate(samp_vec, samp_x):
     mean_est = random.random()
     var_est = random.random()
     run = 1000
+    print height_est(samp_vec, samp_x)
     for i in range(run):
         var_est = update_var_est(samp_vec, mean_est)
         mean_est = update_mean_est(samp_vec, var_est)
@@ -39,7 +51,7 @@ def estimate(samp_vec):
 
 #means spaced from 1 to 100
 sample_count = 1000
-h =  5.
+h = 20.
 m = 10.
 v = .5
 
@@ -49,7 +61,7 @@ ub = m + 6*v
 r = np.arange(lb, ub, (ub-lb)/100)
 
 n1_vec = [n1.func(x) for x in r]
-estimate(n1_vec)
+estimate(n1_vec, r)
 plot.plot(r, n1_vec, "b")
 plot.show()
 
