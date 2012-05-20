@@ -3,6 +3,7 @@
 import sys
 import numpy as np
 import scipy.stats as st
+import operator
 import matplotlib.pyplot as plot 
 import random
 
@@ -15,18 +16,7 @@ class gaussian_peak:
     def func(self, x):
         return self.height * np.exp(-np.square(x-self.mean)/(2*self.var))
 
-def update_var_est(samp_vec, mean_est):
-    n = float(len(samp_vec))
-    v = sum([np.square(x-mean_est)/n for x in samp_vec])
-    #Scipy.stats implementation of inv gamma is a one parameter, need to feed second value as scale
-    return st.invgamma.rvs(n/2, scale=n*v/2)
-
-def update_mean_est(samp_vec, var_est):
-    n = float(len(samp_vec))
-    #Scale variable is standard deviation
-    return st.norm.rvs(np.mean(samp_vec), scale=np.sqrt(var_est/n))
-
-def update_height_est(samp_vec, samp_scaled):
+def update_height_est(data, components):
     #Get values for linear regression estimation 
     ys = np.matrix(samp_vec).transpose()
     xs = np.matrix(samp_scaled).transpose()
@@ -37,32 +27,28 @@ def update_height_est(samp_vec, samp_scaled):
     var = s_2/st.chi2.rvs(1)   
     return st.norm.rvs(beta, scale=np.sqrt(vbeta*var))
 
-def estimate(rand_vec, samp_vec, samp_scaled):
-    mean_est = random.random()
-    var_est = random.random()
-    run = 100
-    height_est = update_height_est(samp_vec, samp_scaled)
-    for i in range(run):
-        var_est = update_var_est(rand_vec, mean_est)
-        mean_est = update_mean_est(rand_vec, var_est)
-    print height_est
-    print mean_est     
-    print var_est
+def estimate(m, v, r, data, *vecs):
+    print data 
+#update_height_est(data,  
+    return 0
+
 
 #means spaced from 1 to 100
 sample_count = 1000
-h = 20.
-m = 11.
-v = 3.
+h = [20., 12., 5.]
+m = [11., 7., 9.]
+v = [.5, .5, .5]
 
-n1 = gaussian_peak(h, m, v)
-n2 = gaussian_peak(1, m, v)
-r = st.norm.rvs(m, v, size=sample_count)
-n1_vec = [n1.func(x) for x in r]
-n2_vec = [n2.func(x) for x in r]
-rand_vec = m + np.sqrt(v)*np.random.randn(sample_count)
-estimate(rand_vec, n1_vec, n2_vec)
-plot.plot(np.ravel(n1_vec), "bo",
-          np.ravel(n2_vec), "ro")
+lb = min(m) - 6*max(v)
+ub = max(m) + 6*max(v)
+r = np.arange(lb, ub, (ub-lb)/100)
+gaussians = [gaussian_peak(x[0], x[1], x[2]) for x in zip(h, m, v)]
+vecs = [np.asarray([ g.func(x) for x in r]) for g in gaussians]
+data = reduce(operator.add, vecs)
+estimate(m, v, data, vecs)
+plot.plot(r, np.ravel(vecs[0]), "b",
+          r, np.ravel(vecs[1]), "r",
+          r, np.ravel(vecs[2]), "g",
+          r, np.ravel(data), "k")
 plot.show()
 
