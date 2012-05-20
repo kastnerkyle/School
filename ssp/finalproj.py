@@ -18,20 +18,21 @@ class gaussian_peak:
 
 def update_height_est(data, components):
     #Get values for linear regression estimation 
-    ys = np.matrix(samp_vec).transpose()
-    xs = np.matrix(samp_scaled).transpose()
-    vbeta = 1./(xs.transpose()*xs)
+    ys = np.matrix(data).transpose()
+    xs = np.hstack([np.matrix(x).transpose() for x in components])
+    vbeta = (xs.transpose()*xs)**-1
     beta = vbeta*xs.transpose()*ys
 
-    s_2 = (ys-xs*beta).transpose()*(ys-xs*beta)
-    var = s_2/st.chi2.rvs(1)   
-    return st.norm.rvs(beta, scale=np.sqrt(vbeta*var))
+    v = float(len(components))
+    s_2 = (1/v)*(ys-xs*beta).transpose()*(ys-xs*beta)
+    var = ((v*s_2)/st.chi2.rvs(v)).item()
+    return np.random.multivariate_normal(np.ravel(beta), np.sqrt(vbeta*var))
 
-def estimate(m, v, r, data, *vecs):
-    print data 
-#update_height_est(data,  
+def estimate(m, v, data, vecs):
+    run = 100
+    for i in range(run):
+        update_height_est(data, vecs) 
     return 0
-
 
 #means spaced from 1 to 100
 sample_count = 1000
@@ -39,8 +40,8 @@ h = [20., 12., 5.]
 m = [11., 7., 9.]
 v = [.5, .5, .5]
 
-lb = min(m) - 6*max(v)
-ub = max(m) + 6*max(v)
+lb = min(m) - max(v)
+ub = max(m) + max(v)
 r = np.arange(lb, ub, (ub-lb)/100)
 gaussians = [gaussian_peak(x[0], x[1], x[2]) for x in zip(h, m, v)]
 vecs = [np.asarray([ g.func(x) for x in r]) for g in gaussians]
