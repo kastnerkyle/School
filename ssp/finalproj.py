@@ -50,6 +50,12 @@ def estimate(rand_vec, samp_vec):
         results["height"].append(height_est)
         results["mean"].append(mean_est)
         results["var"].append(var_est)
+    plot.figure()
+    plot.plot(results["height"])
+    plot.figure()
+    plot.plot(results["mean"])
+    plot.figure()
+    plot.plot(results["var"])
     return map(np.mean, ([results["height"], results["mean"], results["var"]]))
 
 #means spaced from 1 to 100
@@ -68,6 +74,7 @@ print [h2, m2, v2]
 
 approx = gaussian_peak(h2, m2, v2)
 result_vec = [approx.func(x) for x in rand_vec]
+plot.figure()
 plot.plot(rand_vec, samp_vec, "b",
           rand_vec, result_vec, "r")
 plot.show()
