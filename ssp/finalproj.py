@@ -15,9 +15,9 @@ class gaussian_peak:
 
 def update_var_est(samp_vec, mean_est):
     n = float(len(samp_vec))
-    v = sum([np.square(x-mean_est)/n for x in samp_vec])
+    v = sum([np.square(x-mean_est) for x in samp_vec])
     #Scipy.stats implementation of inv gamma is a one parameter, need to feed second value as scale
-    return st.invgamma.rvs(n/2, scale=n*v/2)
+    return st.invgamma.rvs(n/2, scale=v/2)
 
 def update_mean_est(samp_vec, var_est):
      n = float(len(samp_vec))
@@ -31,8 +31,11 @@ def update_height_est(samp_vec, samp_scaled):
     vbeta = 1./(xs.transpose()*xs)
     beta = vbeta*xs.transpose()*ys
 
+    #used pp 580 of Bayesian data Analysis, Second Edition to do sampling from dist
     s_2 = (ys-xs*beta).transpose()*(ys-xs*beta)
     var = s_2/st.chi2.rvs(1)
+
+    #.item() is to convert from 1x1 matrix back to scalar
     return st.norm.rvs(beta, scale=np.sqrt(vbeta*var)).item()
 
 def plotter(results):    
@@ -74,6 +77,7 @@ def estimate(rand_vec, samp_vec):
         results["height"].append(height_est)
         results["mean"].append(mean_est)
         results["var"].append(var_est)
+
     plotter(results)
     return map(np.mean, ([results["height"], results["mean"], results["var"]]))
 
