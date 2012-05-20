@@ -3,8 +3,7 @@
 import sys
 import numpy as np
 import scipy.stats as st
-import operator
-import matplotlib.pyplot as plot 
+import matplotlib.pyplot as plot
 import random
 
 class gaussian_peak:
@@ -16,40 +15,53 @@ class gaussian_peak:
     def func(self, x):
         return self.height * np.exp(-np.square(x-self.mean)/(2*self.var))
 
-def update_height_est(data, components):
-    #Get values for linear regression estimation 
-    ys = np.matrix(data).transpose()
-    xs = np.hstack([np.matrix(x).transpose() for x in components])
-    vbeta = (xs.transpose()*xs)**-1
+def update_var_est(samp_vec, mean_est):
+    n = float(len(samp_vec))
+    v = sum([np.square(x-mean_est)/n for x in samp_vec])
+    #Scipy.stats implementation of inv gamma is a one parameter, need to feed second value as scale
+    return st.invgamma.rvs(n/2, scale=n*v/2)
+
+def update_mean_est(samp_vec, var_est):
+     n = float(len(samp_vec))
+     #Scale variable is standard deviation
+     return st.norm.rvs(np.mean(samp_vec), scale=np.sqrt(var_est/n))
+
+def update_height_est(samp_vec, samp_scaled):
+    #Get values for linear regression estimation
+    ys = np.matrix(samp_vec).transpose()
+    xs = np.matrix(samp_scaled).transpose()
+    vbeta = 1./(xs.transpose()*xs)
     beta = vbeta*xs.transpose()*ys
 
-    v = float(len(components))
-    s_2 = (1/v)*(ys-xs*beta).transpose()*(ys-xs*beta)
-    var = ((v*s_2)/st.chi2.rvs(v)).item()
-    return np.random.multivariate_normal(np.ravel(beta), np.sqrt(vbeta*var))
+    s_2 = (ys-xs*beta).transpose()*(ys-xs*beta)
+    var = s_2/st.chi2.rvs(1)
+    return st.norm.rvs(beta, scale=np.sqrt(vbeta*var)).item()
 
-def estimate(m, v, data, vecs):
-    run = 100
+def estimate(rand_vec, samp_vec):
+    mean_est = random.random()
+    var_est = random.random()
+    run = 1000
     for i in range(run):
-        update_height_est(data, vecs) 
-    return 0
+        var_est = update_var_est(rand_vec, mean_est)
+        mean_est = update_mean_est(rand_vec, var_est)
+
+        unscaled = gaussian_peak(1, mean_est, var_est)
+        approx_vec = [unscaled.func(x) for x in rand_vec]
+        height_est = update_height_est(samp_vec, approx_vec)
+    return (height_est, mean_est, var_est)
 
 #means spaced from 1 to 100
 sample_count = 1000
-h = [20., 12., 5.]
-m = [11., 7., 9.]
-v = [.5, .5, .5]
+h = 20.
+m = 11.
+v = 3.
 
-lb = min(m) - max(v)
-ub = max(m) + max(v)
-r = np.arange(lb, ub, (ub-lb)/100)
-gaussians = [gaussian_peak(x[0], x[1], x[2]) for x in zip(h, m, v)]
-vecs = [np.asarray([ g.func(x) for x in r]) for g in gaussians]
-data = reduce(operator.add, vecs)
-estimate(m, v, data, vecs)
-plot.plot(r, np.ravel(vecs[0]), "b",
-          r, np.ravel(vecs[1]), "r",
-          r, np.ravel(vecs[2]), "g",
-          r, np.ravel(data), "k")
-plot.show()
+rand_vec = m + np.sqrt(v)*np.random.randn(sample_count)
+actual = gaussian_peak(h, m, v)
+samp_vec = [actual.func(x) for x in rand_vec]
 
+[h2, m2, v2] = estimate(rand_vec, samp_vec)
+print [h, m, v]
+print [h2, m2, v2]
+
+out_vec = m2+np.sqrt(v2)*np.random.random(sample_count)    
