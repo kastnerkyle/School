@@ -1,10 +1,8 @@
 #!/usr/bin/python
 
-import sys
 import numpy as np
 import scipy.stats as st
 import matplotlib.pyplot as plot
-import random
 
 class gaussian_peak:
     def __init__(self, height, mean, var):
@@ -38,8 +36,9 @@ def update_height_est(samp_vec, samp_scaled):
     return st.norm.rvs(beta, scale=np.sqrt(vbeta*var)).item()
 
 def estimate(rand_vec, samp_vec):
-    mean_est = random.random()
-    var_est = random.random()
+    mean_est = np.random.random()
+    var_est = np.random.random()
+    results = {"height":[], "mean":[], "var":[]}
     run = 1000
     for i in range(run):
         var_est = update_var_est(rand_vec, mean_est)
@@ -48,15 +47,18 @@ def estimate(rand_vec, samp_vec):
         unscaled = gaussian_peak(1, mean_est, var_est)
         approx_vec = [unscaled.func(x) for x in rand_vec]
         height_est = update_height_est(samp_vec, approx_vec)
-    return (height_est, mean_est, var_est)
+        results["height"].append(height_est)
+        results["mean"].append(mean_est)
+        results["var"].append(var_est)
+    return map(np.mean, ([results["height"], results["mean"], results["var"]]))
 
 #means spaced from 1 to 100
-sample_count = 1000
-h = 20.
-m = 11.
-v = 3.
+sample_count = 1500
+h = 27.
+m = 19.
+v = 4.
 
-rand_vec = m + np.sqrt(v)*np.random.randn(sample_count)
+rand_vec = sorted(m + np.sqrt(v)*np.random.randn(sample_count))
 actual = gaussian_peak(h, m, v)
 samp_vec = [actual.func(x) for x in rand_vec]
 
@@ -64,4 +66,8 @@ samp_vec = [actual.func(x) for x in rand_vec]
 print [h, m, v]
 print [h2, m2, v2]
 
-out_vec = m2+np.sqrt(v2)*np.random.random(sample_count)    
+approx = gaussian_peak(h2, m2, v2)
+result_vec = [approx.func(x) for x in rand_vec]
+plot.plot(rand_vec, samp_vec, "b",
+          rand_vec, result_vec, "r")
+plot.show()
