@@ -1,0 +1,29 @@
+CXX=g++
+CXXFLAGS=-Ofast -Wall -std=c++0x -march=native 
+LIBS=
+
+EXEC=main
+DEPS=\
+        main.o \
+        Node.o \
+        Edge.o \
+        Graph.o
+
+all: main
+
+.PHONY: clean
+
+clean:
+	rm *.o main
+
+main: $(DEPS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+
+Node.o: Node.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+Edge.o: Edge.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+Graph.o: Graph.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
