@@ -4,6 +4,7 @@ import matplotlib.pyplot as plot
 import os
 import sys
 from PyQt4 import QtGui as qtg
+from PyQt4 import QtCore as qtc
 
 class Node:
     def __init__(self, name):
@@ -21,6 +22,8 @@ class Node:
 class Edge:
     def __init__(self, source, dest, is_directed=False, weight=1):
         self.directed = is_directed
+        self.crossed = False
+        self.color = 0
         if weight == 1:
             self.nodes = (Node(str(source)), Node(str(dest)))
             self.weight = weight
@@ -64,24 +67,78 @@ class Graph:
     def getNodes(self):
         return self.nodes
 
-    def plot(self):
-        _t = max(map(len, self.edges))
-        if _t == 2 or _t == 3:
-            self._g.add_edges_from(self.edges)
-            self._g.layout(prog="dot")
-            self._g.draw("graph.png")
-        else:
-            raise TypeError("Edges are made of tuples of length 2, (source, dest), or 3, (source, dest, weight)!")
+    def plot(self, fname="graph.png"):
+        try:
+            _t = max(map(len, self.edges))
+            if _t == 2 or _t == 3:
+                self._g.add_edges_from(self.edges)
+            else:
+                raise TypeError("Edges are made of tuples of length 2, (source, dest), or 3, (source, dest, weight)!")
+        except:
+            print("Empty graph created!")
+        self._g.layout(prog="dot")
+        self._g.draw(fname)
+
+class MainView(qtg.QWidget):
+    def __init__(self):
+        super(MainView, self).__init__()
+        self.graph = Graph()
+        self.graph_pixmap = self.initImage()
+        self.initUI()
+  
+    def initImage(self):
+        graph_pixmap = qtg.QPixmap(self.createGraph())
+        graph_pixmap = graph_pixmap.scaledToHeight(self.height())
+        return graph_pixmap 
+
+    def createGraph(self): 
+        fname = "graph.png" 
+        self.graph.plot(fname)  
+        return fname   
+
+    def initGraph(self, widgets):
+        graph_host = qtg.QLabel(self)
+        graph_host.setPixmap(self.graph_pixmap)
+        widgets.append(graph_host)
+
+    def initEntry(self, widgets):
+        graph_data = qtg.QTableWidget()
+        graph_data.setRowCount(100)
+        graph_data.setColumnCount(2)
+        widgets.append(graph_data)
+
+    def initWander(self, widgets):
+        button = qtg.QPushButton("Wander")
+        widgets.append(button) 
+
+    def initUI(self):
+        left_widgets = []
+        self.initGraph(left_widgets)
+        
+        hbox = qtg.QHBoxLayout()
+        [hbox.addWidget(x) for x in left_widgets]
+
+        hbox.addStretch(1)
+        
+        right_widgets = []
+        self.initEntry(right_widgets)
+        [hbox.addWidget(x) for x in right_widgets]
+       
+        vbox = qtg.QVBoxLayout()
+        vbox.addLayout(hbox)
+
+        vbox.addStretch(1)
+
+        bottom_widgets = []
+        self.initWander(bottom_widgets)
+        [vbox.addWidget(x) for x in bottom_widgets]       
+    
+        self.setLayout(vbox)
+        self.setWindowTitle("Graph Viewer v.01")
+        self.show()
 
 if __name__ == "__main__":
-    import random
-    n = [random.randint(0,10) for x in range(30)]
-    m = [random.randint(0,10) for x in range(30)]
-    e = map(lambda x: Edge(*x, is_directed=True), zip(n, m))
-    g = Graph(edges=e)
-    g.plot()   
 
     app = qtg.QApplication(sys.argv)
-    w = qtg.QWidget()
-    w.show()
+    w = MainView()
     sys.exit(app.exec_())
