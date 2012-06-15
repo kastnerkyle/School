@@ -105,6 +105,7 @@ class MainView(qtg.QWidget):
         graph_data = qtg.QTableWidget()
         graph_data.setRowCount(100)
         graph_data.setColumnCount(2)
+        graph_data.setHorizontalHeaderLabels(["Source", "Destination"])
         widgets.append(graph_data)
 
     def initWander(self, widgets):
