@@ -120,6 +120,8 @@ class MainView(qtg.QWidget):
             self.graph = pickle.load(f)
             self.graph_pixmap = qtg.QPixmap(self.createGraph(self.graph))
             self.graph_host.setPixmap(self.graph_pixmap)
+            self.initTable([])
+            self.fillTable()
             #TODO: Repopulate table
             print "Loaded previous graph from " + self.save_fname
         except IOError:
@@ -133,6 +135,11 @@ class MainView(qtg.QWidget):
 
     def initGraph(self, widgets):
         widgets.append(self.graph_host)
+ 
+    def fillTable(self):
+        for i,j in zip(self.graph.edges, range(self.table.rowCount())):
+            self.table.setItem(j, 0, qtg.QTableWidgetItem(i[0]))
+            self.table.setItem(j, 1, qtg.QTableWidgetItem(i[1]))
 
     def initTable(self, widgets):
         self.table.setRowCount(100)
@@ -140,47 +147,41 @@ class MainView(qtg.QWidget):
         self.table.setHorizontalHeaderLabels(["Source", "Destination"])
         widgets.append(self.table)
 
-    def genGetTableData(self, table, graph, graph_host):
-        def getTableData(click):
-            #Clear all nodes and edges
-            graph.clearAll()
-            #Match any cells with text in them
-            table_items = table.findItems(".+", qtc.Qt.MatchRegExp)
-            table_items = [{"row":x.row(), "name":str(x.text())} 
-                           for x in table_items]
-            #Sort into list of [source1, dest1, source2, dest2, source3, dest3]
-            table_items = [x["name"] for x in 
-                           sorted(table_items, key=lambda x: x["row"])]
-            #Split sorted list into list of tuples (source, dest)
-            table_items = map(None, *([iter(table_items)]*2))
-            #Remove any tuples without both source and dest
-            print table_items
-            table_items = [filter(None, x) for x in table_items]
-            table_items = filter(lambda x: len(x) == 2, table_items)
-            #Add edges to graph
-            [graph.addEdge(x[0], x[1]) for x in table_items]
-            #Plot new edges
-            graph_pixmap = qtg.QPixmap(self.createGraph(graph))
-            graph_host.setPixmap(graph_pixmap)
-        return getTableData
+    def getTableData(self, click):
+        #Clear all nodes and edges
+        self.graph.clearAll()
+        #Match any cells with text in them
+        table_items = self.table.findItems(".+", qtc.Qt.MatchRegExp)
+        table_items = [{"row":x.row(), "name":str(x.text())} 
+                       for x in table_items]
+        #Sort into list of [source1, dest1, source2, dest2, source3, dest3]
+        table_items = [x["name"] for x in 
+                       sorted(table_items, key=lambda x: x["row"])]
+        #TODO Fix bug with separated source and dest
+        #Split sorted list into list of tuples (source, dest)
+        table_items = map(None, *([iter(table_items)]*2))
+        #Remove any tuples without both source and dest
+        table_items = [filter(None, x) for x in table_items]
+        table_items = filter(lambda x: len(x) == 2, table_items)
+        #Add edges to graph
+        [self.graph.addEdge(x[0], x[1]) for x in table_items]
+        #Plot new edges
+        self.graph_pixmap = qtg.QPixmap(self.createGraph(self.graph))
+        self.graph_host.setPixmap(self.graph_pixmap)
 
     def initWander(self, widgets):
         button = qtg.QPushButton("Wander")
-        get = self.genGetTableData(self.table, self.graph, self.graph_host)
-        button.clicked[bool].connect(get)
+        button.clicked[bool].connect(self.getTableData)
         widgets.append(button)
 
-    def genSaveTableData(self, graph):
-        def saveTableData(click):
-            f = open(self.save_fname, "wb")
-            pickle.dump(graph, f) 
-            f.close()
-        return saveTableData 
+    def saveTableData(self, click):
+        f = open(self.save_fname, "wb")
+        pickle.dump(self.graph, f) 
+        f.close()
 
     def initSave(self, widgets):
         button = qtg.QPushButton("Save")
-        save = self.genSaveTableData(self.graph)
-        button.clicked[bool].connect(save)
+        button.clicked[bool].connect(self.saveTableData)
         widgets.append(button) 
 
     def initUI(self):
