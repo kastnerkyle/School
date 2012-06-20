@@ -1,6 +1,5 @@
-#Need to have pydot installed on the syste
+#Need to have pydot installed on the system
 import pygraphviz as pgv
-import matplotlib.pyplot as plot
 import os
 import sys
 from PyQt4 import QtGui as qtg
@@ -9,7 +8,14 @@ import pickle
 
 class Node:
     def __init__(self, name):
-        self.name = name 
+        self.name = str(name)
+        self.connections = 1
+
+    def __eq__(self, other):
+        return (self.name == other.name)
+
+    def __ne__(self, other):
+        return not self.__eq__(self, other)
 
     def __repr__(self):
         return str(self.name)
@@ -24,12 +30,12 @@ class Edge:
     def __init__(self, source, dest, is_directed=False, weight=1):
         self.directed = is_directed
         self.crossed = False
-        self.color = 0
+        self.color = i
         if weight == 1:
-            self.nodes = (Node(str(source)), Node(str(dest)))
+            self.nodes = (Node(source), Node(dest))
             self.weight = weight
         else:
-            self.nodes = (Node(str(source)), Node(str(dest)), weight)
+            self.nodes = (Node(source), Node(dest), weight)
             self.weight = weight
         
     def __repr__(self):
@@ -51,17 +57,15 @@ class Graph:
         self.is_directed = is_directed
         self.is_strict = is_strict
         if nodes != None:
-            self.nodes = nodes
+            [self.addNode(x) for x in nodes]
         if edges != None:
-            self.edges = map(lambda x: x.nodes, edges)
-            self.nodes = [list(set(x)) for x in self.edges]
+            [self.addEdge(x) for x in edges]
    
     def __getstate__(self):
         return {"nodes": self.nodes,
                 "edges": self.edges,
                 "is_directed": self.is_directed,
                 "is_strict": self.is_strict}
-                       
 
     def __setstate__(self, state):
            self.nodes = state["nodes"]
@@ -88,9 +92,12 @@ class Graph:
         return self.edges
 
     def addNode(self, node):
-        if str(node) not in self.nodes:
-            self.nodes.append(str(node))
-
+        potential_node = Node(node)
+        if potential_node in self.nodes:
+            self.nodes[self.nodes.index(potential_node)].connections += 1
+        else:
+            self.nodes.append(potential_node)
+            
     def getNodes(self):
         return self.nodes
 
@@ -120,9 +127,9 @@ class MainView(qtg.QWidget):
             self.graph = pickle.load(f)
             self.graph_pixmap = qtg.QPixmap(self.createGraph(self.graph))
             self.graph_host.setPixmap(self.graph_pixmap)
+            #Empty list so that I can reuse the initTable function
             self.initTable([])
             self.fillTable()
-            #TODO: Repopulate table
             print "Loaded previous graph from " + self.save_fname
         except IOError:
             self.graph = Graph()
@@ -169,9 +176,21 @@ class MainView(qtg.QWidget):
         self.graph_pixmap = qtg.QPixmap(self.createGraph(self.graph))
         self.graph_host.setPixmap(self.graph_pixmap)
 
+    def updateGraph(self, click):
+        print "Update!"
+
+    def initUpdate(self, widgets):
+        button = qtg.QPushButton("Update")
+        button.clicked[bool].connect(self.getTableData)
+        button.clicked[bool].connect(self.updateGraph)
+        widgets.append(button)
+
+    def wanderGraph(click):
+        print "Wander!"
+
     def initWander(self, widgets):
         button = qtg.QPushButton("Wander")
-        button.clicked[bool].connect(self.getTableData)
+        button.clicked[bool].connect(self.wanderGraph)
         widgets.append(button)
 
     def saveTableData(self, click):
@@ -183,30 +202,54 @@ class MainView(qtg.QWidget):
         button = qtg.QPushButton("Save")
         button.clicked[bool].connect(self.saveTableData)
         widgets.append(button) 
+    
+    def clearTableData(self, click):
+        for i in range(self.table.rowCount()):
+            self.table.setItem(i, 0, qtg.QTableWidgetItem())
+            self.table.setItem(i, 1, qtg.QTableWidgetItem())
+                    
+    def initClear(self, widgets):
+        button = qtg.QPushButton("Clear")
+        button.clicked[bool].connect(self.clearTableData)
+        button.clicked[bool].connect(self.getTableData)
+        widgets.append(button)
+
+    def debugClass(self, click):
+        print [(x.name, x.connections) for x in self.graph.nodes]
+        print self.graph.nodes
+
+    def initDebug(self, widgets):
+        button = qtg.QPushButton("Debug")
+        button.clicked[bool].connect(self.debugClass)
+        widgets.append(button)
 
     def initUI(self):
-        left_widgets = []
-        self.initGraph(left_widgets)
+        top_left_widgets = []
+        self.initGraph(top_left_widgets)
         
-        hbox = qtg.QHBoxLayout()
-        [hbox.addWidget(x) for x in left_widgets]
-
-        hbox.addStretch(1)
-        
-        right_widgets = []
-        self.initTable(right_widgets)
-        [hbox.addWidget(x) for x in right_widgets]
-       
-        vbox = qtg.QVBoxLayout()
-        vbox.addLayout(hbox)
-
-        vbox.addStretch(1)
+        top_right_widgets = []
+        self.initTable(top_right_widgets)
 
         bottom_widgets = []
+        self.initClear(bottom_widgets)
+        self.initUpdate(bottom_widgets)
+        self.initDebug(bottom_widgets)
         self.initWander(bottom_widgets)
         self.initSave(bottom_widgets)
-        [vbox.addWidget(x) for x in bottom_widgets]       
-    
+
+        hbox_top = qtg.QHBoxLayout()
+        [hbox_top.addWidget(x) for x in top_left_widgets]
+        hbox_top.addStretch(1)
+        [hbox_top.addWidget(x) for x in top_right_widgets]
+
+        hbox_bottom = qtg.QHBoxLayout()
+        [hbox_bottom.addWidget(x) for x in bottom_widgets] 
+        
+        vbox = qtg.QVBoxLayout()
+        vbox.addLayout(hbox_top)
+        vbox.addStretch(1)
+        vbox.addLayout(hbox_bottom)
+ 
         self.setLayout(vbox)
         self.setWindowTitle("Graph Viewer v.01")
         self.show()
