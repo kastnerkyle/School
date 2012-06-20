@@ -104,11 +104,7 @@ class Graph:
     def plot(self, fname="graph.png"):
         _g = pgv.AGraph(directed=self.is_directed, strict=self.is_strict)
         try:
-           _t = max(map(len, self.edges))
-           if _t == 2 or _t == 3:
-               _g.add_edges_from(self.edges)
-           else:
-               raise TypeError("Edges are made of tuples of length 2, (source, dest), or 3, (source, dest, weight)!")
+            _g.add_edges_from(self.edges)
         except:
             print("Empty graph created!")
         _g.layout(prog="dot")
