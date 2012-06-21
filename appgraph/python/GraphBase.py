@@ -9,8 +9,24 @@ import pickle
 class Node:
     def __init__(self, name):
         self.name = str(name)
-        self.connections = 1
+        self.num_connections = 1
+        self.connected_to = []
 
+    def addConnection(self, connector):
+        self.num_connections = self.num_connections + 1
+        self.connected_to.append(connector)
+
+    def removeConnection(self, connector):
+       if connector in self.connected_to:
+            del self.connected_to[self.connected_to.index(connector)]
+       else:
+            print `connector` + " is not connected to node " + `self`
+
+    def Details(self):
+        return str({"NodeName": self.name,
+                    "ConnectedTo": self.connected_to,
+                    "NumConnections": self.num_connections})
+ 
     def __eq__(self, other):
         return (self.name == other.name)
 
@@ -21,7 +37,7 @@ class Node:
         return str(self.name)
 
     def __str__(self):
-        return str(self.name)
+        return self.__repr__()
 
     def __len__(self):
         return 1
@@ -85,18 +101,19 @@ class Graph:
 
     def addEdge(self, source, dest, is_directed=False, weight=1):
         self.edges.append((source, dest))
-        self.addNode(source)
-        self.addNode(dest)
+        self.addNode(source, connection=dest)
+        self.addNode(dest, connection=source)
 
     def getEdges(self):
         return self.edges
 
-    def addNode(self, node):
-        potential_node = Node(node)
-        if potential_node in self.nodes:
-            self.nodes[self.nodes.index(potential_node)].connections += 1
-        else:
-            self.nodes.append(potential_node)
+    def addNode(self, node, connection=None):
+        primary_node = Node(node)
+        if primary_node not in self.nodes:
+            self.nodes.append(primary_node)
+        if connection is not None:
+            connection_node = Node(connection)
+            self.nodes[self.nodes.index(primary_node)].addConnection(connection_node)
             
     def getNodes(self):
         return self.nodes
@@ -181,8 +198,9 @@ class MainView(qtg.QWidget):
         button.clicked[bool].connect(self.updateGraph)
         widgets.append(button)
 
-    def wanderGraph(click):
+    def wanderGraph(self, click):
         print "Wander!"
+        print self.graph.nodes
 
     def initWander(self, widgets):
         button = qtg.QPushButton("Wander")
@@ -211,7 +229,8 @@ class MainView(qtg.QWidget):
         widgets.append(button)
 
     def debugClass(self, click):
-        print [(x.name, x.connections) for x in self.graph.nodes]
+        print [(x.name, x.num_connections) for x in self.graph.nodes]
+        print [x.connected_to for x in self.graph.nodes]
         print self.graph.nodes
 
     def initDebug(self, widgets):
