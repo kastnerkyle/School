@@ -140,6 +140,18 @@ class Wanderer(object):
         for k in self.graph.nodes:
             self.tree[k] = k.connected_to
         print self.tree
+        #print self.children(self.graph.nodes[0])
+    
+    def children(self, start):
+        child_list = []
+        to_crawl = deque([start])
+        while to_crawl:
+            current = to_crawl.popleft()
+            child_list.append(current)
+            print child_list
+            node_children = self.tree[current]
+            to_crawl.extend(node_children)
+        return child_list
 
 class BruteForceWanderer(Wanderer):
     def __init__(self, graph):
