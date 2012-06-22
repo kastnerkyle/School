@@ -5,11 +5,18 @@ import sys
 from PyQt4 import QtGui as qtg
 from PyQt4 import QtCore as qtc
 import pickle
+import copy
 
-class Node:
+#http://kmkeen.com/python-trees/2009-05-30-11-05-40-138.html
+from collections import deque
+
+#BUGS:
+#Can't Wander without first updating
+
+class Node(object):
     def __init__(self, name):
         self.name = str(name)
-        self.num_connections = 1
+        self.num_connections = 0
         self.connected_to = []
 
     def addConnection(self, connector):
@@ -42,11 +49,10 @@ class Node:
     def __len__(self):
         return 1
 
-class Edge:
+class Edge(object):
     def __init__(self, source, dest, is_directed=False, weight=1):
         self.directed = is_directed
-        self.crossed = False
-        self.color = i
+        self.color = None
         if weight == 1:
             self.nodes = (Node(source), Node(dest))
             self.weight = weight
@@ -66,7 +72,7 @@ class Edge:
     def __len__(self):
         return len(self.nodes)
 
-class Graph:
+class Graph(object):
     def __init__(self, edges=None, nodes=None, is_directed=False, is_strict=False):
         self.nodes = []
         self.edges = []
@@ -127,6 +133,18 @@ class Graph:
         _g.layout(prog="dot")
         _g.draw(fname)
 
+class Wanderer(object):
+    def __init__(self, graph):
+        self.graph = copy.deepcopy(graph)
+        self.tree = {}
+        for k in self.graph.nodes:
+            self.tree[k] = k.connected_to
+        print self.tree
+
+class BruteForceWanderer(Wanderer):
+    def __init__(self, graph):
+        super(BruteForceWanderer, self).__init__(graph)
+ 
 class MainView(qtg.QWidget):
     def __init__(self):
         super(MainView, self).__init__()
@@ -200,7 +218,7 @@ class MainView(qtg.QWidget):
 
     def wanderGraph(self, click):
         print "Wander!"
-        print self.graph.nodes
+        BruteForceWanderer(self.graph) 
 
     def initWander(self, widgets):
         button = qtg.QPushButton("Wander")
@@ -229,9 +247,7 @@ class MainView(qtg.QWidget):
         widgets.append(button)
 
     def debugClass(self, click):
-        print [(x.name, x.num_connections) for x in self.graph.nodes]
-        print [x.connected_to for x in self.graph.nodes]
-        print self.graph.nodes
+        print [x.Details() for x in self.graph.nodes]
 
     def initDebug(self, widgets):
         button = qtg.QPushButton("Debug")
