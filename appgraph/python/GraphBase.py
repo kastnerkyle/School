@@ -154,7 +154,9 @@ class Wanderer(object):
         while len(graph.edges) > 0 and len(to_crawl) > 0:
             current = to_crawl.popleft()
             for n,v in enumerate(graph.edges):
-                #Using string comparison to compare nodes since objects are unique
+                #Using string compare on nodes since objects are unique
+                #Need to add a "connection check" here
+                #So it doesn't take dead ends until necessary
                 if sorted(map(str,v)) == sorted(map(str,
                                                     [visited[-1], current])):
                     del graph.edges[n]
@@ -194,7 +196,7 @@ class MainView(qtg.QWidget):
         widgets.append(self.graph_host)
  
     def fillTable(self):
-        for i,j in zip(self.graph.edges, range(self.table.rowCount())):
+        for i,j in zip(self.graph.getEdges(), range(self.table.rowCount())):
             self.table.setItem(j, 0, qtg.QTableWidgetItem(str(i[0])))
             self.table.setItem(j, 1, qtg.QTableWidgetItem(str(i[1])))
 
@@ -266,7 +268,7 @@ class MainView(qtg.QWidget):
         widgets.append(button)
 
     def debugClass(self, click):
-        print [x.Details() for x in self.graph.nodes]
+        print [x.Details() for x in self.graph.getNodes()]
 
     def initDebug(self, widgets):
         button = qtg.QPushButton("Debug")
