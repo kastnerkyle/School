@@ -54,15 +54,15 @@ class Edge(object):
         self.directed = is_directed
         self.color = None
         if weight == 1:
-            self.nodes = (Node(source), Node(dest))
+            self.nodes = [Node(source), Node(dest)]
             self.weight = weight
         else:
-            self.nodes = (Node(source), Node(dest), weight)
+            self.nodes = [Node(source), Node(dest), weight]
             self.weight = weight
         
     def __repr__(self):
         if self.directed:
-            return "(" + str(self.nodes[0]) + " -> " + str(self.nodes[1])+")"
+            return "[" + str(self.nodes[0]) + " -> " + str(self.nodes[1])+"]"
         else:
             return str(self.nodes)
 
@@ -106,7 +106,7 @@ class Graph(object):
         del self.nodes[:]
 
     def addEdge(self, source, dest, is_directed=False, weight=1):
-        self.edges.append((source, dest))
+        self.edges.append([Node(source), Node(dest)])
         self.addNode(source, connection=dest)
         self.addNode(dest, connection=source)
 
@@ -135,27 +135,34 @@ class Graph(object):
 
 class Wanderer(object):
     def __init__(self, graph):
-        self.graph = copy.deepcopy(graph)
-        self.tree = {}
-        for k in self.graph.nodes:
-            self.tree[k] = k.connected_to
-        print self.tree
-        #print self.children(self.graph.nodes[0])
-    
-    def children(self, start):
-        child_list = []
-        to_crawl = deque([start])
-        while to_crawl:
-            current = to_crawl.popleft()
-            child_list.append(current)
-            print child_list
-            node_children = self.tree[current]
-            to_crawl.extend(node_children)
-        return child_list
+        tree = {}
+        for k in graph.nodes:
+            tree[str(k)] = k.connected_to
+        for n,i in enumerate(graph.nodes):
+            print self.walk(graph.nodes[n], copy.deepcopy(graph), tree)   
 
-class BruteForceWanderer(Wanderer):
-    def __init__(self, graph):
-        super(BruteForceWanderer, self).__init__(graph)
+    def walk(self, start, graph, tree, directed=False):
+        #Start at the first node
+        to_crawl = deque([start])
+        visited = []
+        #Go to the second node
+        current = to_crawl.popleft()
+        visited.append(current)
+        #Now this is a list of all possible paths from there
+        node_connections = tree[str(current)]
+        to_crawl.extend(node_connections)
+        while len(graph.edges) > 0 and len(to_crawl) > 0:
+            current = to_crawl.popleft()
+            for n,v in enumerate(graph.edges):
+                #Using string comparison to compare nodes since objects are unique
+                if sorted(map(str,v)) == sorted(map(str,
+                                                    [visited[-1], current])):
+                    del graph.edges[n]
+                    visited.append(current)
+                    node_connections = tree[str(current)]
+                    to_crawl.extend(node_connections)
+        print graph.edges
+        return visited
  
 class MainView(qtg.QWidget):
     def __init__(self):
@@ -188,8 +195,8 @@ class MainView(qtg.QWidget):
  
     def fillTable(self):
         for i,j in zip(self.graph.edges, range(self.table.rowCount())):
-            self.table.setItem(j, 0, qtg.QTableWidgetItem(i[0]))
-            self.table.setItem(j, 1, qtg.QTableWidgetItem(i[1]))
+            self.table.setItem(j, 0, qtg.QTableWidgetItem(str(i[0])))
+            self.table.setItem(j, 1, qtg.QTableWidgetItem(str(i[1])))
 
     def initTable(self, widgets):
         self.table.setRowCount(100)
@@ -230,7 +237,7 @@ class MainView(qtg.QWidget):
 
     def wanderGraph(self, click):
         print "Wander!"
-        BruteForceWanderer(self.graph) 
+        Wanderer(copy.deepcopy(self.graph)) 
 
     def initWander(self, widgets):
         button = qtg.QPushButton("Wander")
@@ -290,7 +297,6 @@ class MainView(qtg.QWidget):
         
         vbox = qtg.QVBoxLayout()
         vbox.addLayout(hbox_top)
-        vbox.addStretch(1)
         vbox.addLayout(hbox_bottom)
  
         self.setLayout(vbox)
