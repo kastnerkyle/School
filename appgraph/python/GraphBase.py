@@ -6,7 +6,7 @@ from PyQt4 import QtGui as qtg
 from PyQt4 import QtCore as qtc
 import pickle
 import copy
-
+import time 
 #http://kmkeen.com/python-trees/2009-05-30-11-05-40-138.html
 from collections import deque
 
@@ -38,7 +38,7 @@ class Node(object):
         return (self.name == other.name)
 
     def __ne__(self, other):
-        return not self.__eq__(self, other)
+        return not self.__eq__(other)
 
     def __repr__(self):
         return str(self.name)
@@ -59,7 +59,13 @@ class Edge(object):
         else:
             self.nodes = [Node(source), Node(dest), weight]
             self.weight = weight
-        
+
+    def __eq__(self, other):
+        return len(self.nodes) == len([True for i in other.nodes if i in self.nodes])
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __repr__(self):
         if self.directed:
             return "[" + str(self.nodes[0]) + " -> " + str(self.nodes[1])+"]"
@@ -106,7 +112,7 @@ class Graph(object):
         del self.nodes[:]
 
     def addEdge(self, source, dest, is_directed=False, weight=1):
-        self.edges.append([Node(source), Node(dest)])
+        self.edges.append(Edge(source, dest))
         self.addNode(source, connection=dest)
         self.addNode(dest, connection=source)
 
@@ -126,10 +132,8 @@ class Graph(object):
 
     def plot(self, fname="graph.png"):
         _g = pgv.AGraph(directed=self.is_directed, strict=self.is_strict)
-        try:
-            _g.add_edges_from(self.edges)
-        except:
-            print("Empty graph created!")
+        for i in self.edges:
+            _g.add_edge(i.nodes[0], i.nodes[1])
         _g.layout(prog="dot")
         _g.draw(fname)
 
@@ -139,32 +143,21 @@ class Wanderer(object):
         for k in graph.nodes:
             tree[str(k)] = k.connected_to
         for n,i in enumerate(graph.nodes):
-            print self.walk(graph.nodes[n], copy.deepcopy(graph), tree)   
+            print self.walk(graph.nodes[n], copy.deepcopy(graph), tree)
+            print "Loop end"
+        print "Wander Complete!"   
 
-    def walk(self, start, graph, tree, directed=False):
-        #Start at the first node
-        to_crawl = deque([start])
-        visited = []
-        #Go to the second node
-        current = to_crawl.popleft()
-        visited.append(current)
-        #Now this is a list of all possible paths from there
-        node_connections = tree[str(current)]
-        to_crawl.extend(node_connections)
-        while len(graph.edges) > 0 and len(to_crawl) > 0:
-            current = to_crawl.popleft()
-            for n,v in enumerate(graph.edges):
-                #Using string compare on nodes since objects are unique
-                #Need to add a "connection check" here
-                #So it doesn't take dead ends until necessary
-                if sorted(map(str,v)) == sorted(map(str,
-                                                    [visited[-1], current])):
-                    del graph.edges[n]
-                    visited.append(current)
-                    node_connections = tree[str(current)]
-                    to_crawl.extend(node_connections)
-        print graph.edges
-        return visited
+    def walk(self, start, graph, tree, edges_walked=[], directed=False):
+        if len(graph.edges) == len([n for n in edges_walked if n in graph.edges]):
+            return edges_walked      
+        possibles = tree[str(start)]
+        for x in possibles:
+            e = Edge(start, x)
+            walked = len(filter(lambda x: x==e, edges_walked))
+            total = len(filter(lambda x: x==e, graph.edges))
+            if e in graph.edges and walked < total:
+               edges_walked.append(e)
+               self.walk(x, graph, tree, copy.deepcopy(edges_walked)) 
  
 class MainView(qtg.QWidget):
     def __init__(self):
@@ -197,8 +190,8 @@ class MainView(qtg.QWidget):
  
     def fillTable(self):
         for i,j in zip(self.graph.getEdges(), range(self.table.rowCount())):
-            self.table.setItem(j, 0, qtg.QTableWidgetItem(str(i[0])))
-            self.table.setItem(j, 1, qtg.QTableWidgetItem(str(i[1])))
+            self.table.setItem(j, 0, qtg.QTableWidgetItem(str(i.nodes[0])))
+            self.table.setItem(j, 1, qtg.QTableWidgetItem(str(i.nodes[1])))
 
     def initTable(self, widgets):
         self.table.setRowCount(100)
