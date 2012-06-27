@@ -155,6 +155,7 @@ class Wanderer(object):
             e = Edge(start, x)
             walked = len(filter(lambda x: x==e, edges_walked))
             total = len(filter(lambda x: x==e, graph.edges))
+            #Add a sort and split here to ensure that node with most ways to go is next
             if e in graph.edges and walked < total:
                edges_walked.append(e)
                self.walk(x, graph, tree, copy.deepcopy(edges_walked)) 
