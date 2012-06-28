@@ -143,22 +143,24 @@ class Wanderer(object):
         for k in graph.nodes:
             tree[str(k)] = k.connected_to
         for n,i in enumerate(graph.nodes):
-            print self.walk(graph.nodes[n], copy.deepcopy(graph), tree)
+            print self.walk(graph.nodes[n], tree, graph, copy.copy(graph.edges))
             print "Loop end"
         print "Wander Complete!"   
 
-    def walk(self, start, graph, tree, edges_walked=[], directed=False):
-        if len(graph.edges) == len([n for n in edges_walked if n in graph.edges]):
-            return edges_walked      
+    def walk(self, start, tree, graph, edges, walked=[], directed=False):
+        if len(edges) == 0:
+            return "Path found!"
         possibles = tree[str(start)]
         for x in possibles:
             e = Edge(start, x)
-            walked = len(filter(lambda x: x==e, edges_walked))
-            total = len(filter(lambda x: x==e, graph.edges))
             #Add a sort and split here to ensure that node with most ways to go is next
-            if e in graph.edges and walked < total:
-               edges_walked.append(e)
-               self.walk(x, graph, tree, copy.deepcopy(edges_walked)) 
+            if e in edges:
+                walked.append(e)
+                del edges[edges.index(e)]
+                #print walked
+                #print edges
+                #time.sleep(1)
+                return self.walk(x, tree, graph, copy.copy(edges), copy.copy(walked)) 
  
 class MainView(qtg.QWidget):
     def __init__(self):
