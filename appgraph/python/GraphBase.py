@@ -144,7 +144,6 @@ class Wanderer(object):
             tree[str(k)] = k.connected_to
         for n,i in enumerate(graph.nodes):
             print self.walk(graph.nodes[n], tree, copy.copy(graph.edges))
-            print "Loop end"
         print "Wander Complete!"   
 
     def walk(self, start, tree, edges, walked=[], directed=False):
