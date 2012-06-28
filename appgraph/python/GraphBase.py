@@ -138,28 +138,33 @@ class Graph(object):
         _g.draw(fname)
 
 class Wanderer(object):
-    def __init__(self, graph):
-        tree = {}
+    def __init__(self, num, graph):
+        self.tree = {}
+        self.graph = graph
+        self.edges = copy.deepcopy(self.graph.edges)
+        self.num = num
         for k in graph.nodes:
-            tree[str(k)] = k.connected_to
-        for n,i in enumerate(graph.nodes):
-            print self.walk(graph.nodes[n], tree, copy.copy(graph.edges))
+            self.tree[str(k)] = k.connected_to
         print "Wander Complete!"   
 
-    def walk(self, start, tree, edges, walked=[], directed=False):
-        if len(edges) == 0:
+    def run(self):
+        self.walk(self.graph.nodes[0])
+        self.edges = copy.deepcopy(self.graph.edges)
+
+    def walk(self, start, walked=[], directed=False):
+        if len(self.edges) == 0:
             return "Path found!"
-        possibles = tree[str(start)]
+        possibles = self.tree[str(start)]
         for x in possibles:
             e = Edge(start, x)
             #Add a sort and split here to ensure that node with most ways to go is next
-            if e in edges:
+            if e in self.edges:
                 walked.append(e)
-                del edges[edges.index(e)]
-                #print walked
-                #print edges
-                #time.sleep(1)
-                return self.walk(x, tree, copy.copy(edges), copy.copy(walked)) 
+                del self.edges[self.edges.index(e)]
+                print walked
+                print self.edges
+                time.sleep(1)
+                return self.walk(x, copy.copy(walked)) 
  
 class MainView(qtg.QWidget):
     def __init__(self):
@@ -234,7 +239,12 @@ class MainView(qtg.QWidget):
 
     def wanderGraph(self, click):
         print "Wander!"
-        Wanderer(copy.deepcopy(self.graph)) 
+        w = Wanderer(0, copy.deepcopy(self.graph)) 
+        w.run()
+        x = Wanderer(1, copy.deepcopy(self.graph))
+        x.run()
+        y = Wanderer(2, copy.deepcopy(self.graph))
+        y.run()
 
     def initWander(self, widgets):
         button = qtg.QPushButton("Wander")
