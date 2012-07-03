@@ -240,7 +240,7 @@ class MainView(qtg.QWidget):
 
     def wanderGraph(self, click):
         print "Wander!"
-        for i in range(len(self.graph.edges)):
+        for i in range(len(self.graph.nodes)):
             w = Wanderer(copy.deepcopy(self.graph), i)
             w.run()
             del w
