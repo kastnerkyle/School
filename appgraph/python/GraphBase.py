@@ -137,7 +137,7 @@ class Graph(object):
         _g.layout(prog="dot")
         _g.draw(fname)
 
-class Wanderer(object):
+class BruteWanderer(object):
     def __init__(self, graph, num):
         self.tree = {}
         self.graph = copy.deepcopy(graph)
@@ -241,7 +241,7 @@ class MainView(qtg.QWidget):
     def wanderGraph(self, click):
         print "Wander!"
         for i in range(len(self.graph.nodes)):
-            w = Wanderer(copy.deepcopy(self.graph), i)
+            w = BruteWanderer(copy.deepcopy(self.graph), i)
             w.run()
             del w
 
