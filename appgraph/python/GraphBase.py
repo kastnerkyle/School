@@ -50,19 +50,23 @@ class Node(object):
         return 1
 
 class Edge(object):
-    def __init__(self, source, dest, is_directed=False, weight=1):
+    def __init__(self, source, dest, weight=None, is_directed=False):
         self.directed = is_directed
         self.color = None
-        if weight == 1:
+        if weight == None or weight == "":
             self.nodes = [Node(source), Node(dest)]
-            self.weight = weight
+            self.weight = None
         else:
-            self.nodes = [Node(source), Node(dest), weight]
-            self.weight = weight
+            try:
+               float(weight)
+            except ValueError:
+               print "Must be convertable to float!"
+            self.nodes = [Node(source), Node(dest), float(weight)]
+            self.weight = float(weight)
 
     def __eq__(self, other):
         return len(self.nodes) == len([True for i in other.nodes if i in self.nodes])
-
+   
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -111,8 +115,12 @@ class Graph(object):
     def clearNodes(self):
         del self.nodes[:]
 
-    def addEdge(self, source, dest, is_directed=False, weight=1):
-        self.edges.append(Edge(source, dest))
+    def addEdge(self, source, dest, weight=None, is_directed=False):
+        print weight 
+        if weight != None:
+           self.edges.append(Edge(source, dest, weight=weight))
+        else:
+            self.edges.append(Edge(source, dest))
         self.addNode(source, connection=dest)
         self.addNode(dest, connection=source)
 
@@ -160,7 +168,6 @@ class BruteWanderer(object):
         possibles = self.tree[str(start)]
         for x in possibles:
             e = Edge(start, x)
-            #Add a sort and split here to ensure that node with most ways to go is next
             if e in self.edges:
                 self.walked.append(e)
                 del self.edges[self.edges.index(e)]
@@ -200,11 +207,12 @@ class MainView(qtg.QWidget):
         for i,j in zip(self.graph.getEdges(), range(self.table.rowCount())):
             self.table.setItem(j, 0, qtg.QTableWidgetItem(str(i.nodes[0])))
             self.table.setItem(j, 1, qtg.QTableWidgetItem(str(i.nodes[1])))
+            self.table.setItem(j, 2, qtg.QTableWidgetItem(str(i.nodes[2])))
 
     def initTable(self, widgets):
         self.table.setRowCount(100)
-        self.table.setColumnCount(2)
-        self.table.setHorizontalHeaderLabels(["Source", "Destination"])
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Source", "Destination", "Weight"])
         widgets.append(self.table)
 
     def getTableData(self, click):
@@ -214,17 +222,16 @@ class MainView(qtg.QWidget):
         table_items = self.table.findItems(".+", qtc.Qt.MatchRegExp)
         table_items = [{"row":x.row(), "name":str(x.text())} 
                        for x in table_items]
-        #Sort into list of [source1, dest1, source2, dest2, source3, dest3]
+        #Sort into list of [source1, dest1, weight1, source2, dest2, weight2...]
         table_items = [x["name"] for x in 
                        sorted(table_items, key=lambda x: x["row"])]
-        #TODO Fix bug with separated source and dest
-        #Split sorted list into list of tuples (source, dest)
-        table_items = map(None, *([iter(table_items)]*2))
-        #Remove any tuples without both source and dest
+        #Split sorted list into list of tuples (source, dest, weight)
+        table_items = map(None, *([iter(table_items)]*3))
+        #Remove any tuples without source, dest, and weight
         table_items = [filter(None, x) for x in table_items]
-        table_items = filter(lambda x: len(x) == 2, table_items)
+        table_items = filter(lambda x: len(x) == 3, table_items)
         #Add edges to graph
-        [self.graph.addEdge(x[0], x[1]) for x in table_items]
+        [self.graph.addEdge(x[0], x[1], weight=x[2]) for x in table_items]
         #Plot new edges
         self.graph_pixmap = qtg.QPixmap(self.createGraph(self.graph))
         self.graph_host.setPixmap(self.graph_pixmap)
@@ -264,6 +271,7 @@ class MainView(qtg.QWidget):
         for i in range(self.table.rowCount()):
             self.table.setItem(i, 0, qtg.QTableWidgetItem())
             self.table.setItem(i, 1, qtg.QTableWidgetItem())
+            self.table.setItem(i, 2, qtg.QTableWidgetItem())
                     
     def initClear(self, widgets):
         button = qtg.QPushButton("Clear")
@@ -295,7 +303,6 @@ class MainView(qtg.QWidget):
 
         hbox_top = qtg.QHBoxLayout()
         [hbox_top.addWidget(x) for x in top_left_widgets]
-        hbox_top.addStretch(1)
         [hbox_top.addWidget(x) for x in top_right_widgets]
 
         hbox_bottom = qtg.QHBoxLayout()
@@ -312,4 +319,5 @@ class MainView(qtg.QWidget):
 if __name__ == "__main__":
     app = qtg.QApplication(sys.argv)
     w = MainView()
+    w.resize(400, 400)
     sys.exit(app.exec_())
