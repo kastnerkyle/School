@@ -35,7 +35,11 @@ class Node(object):
                     "NumConnections": self.num_connections})
  
     def __eq__(self, other):
-        return (self.name == other.name)
+        #Want to be able to compare equality between string and node name
+        if type(self) == type(other):
+            return (self.name == other.name)
+        else:
+            return self.name == str(other)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -95,7 +99,10 @@ class Graph(object):
             [self.addNode(x) for x in nodes]
         if edges != None:
             [self.addEdge(x) for x in edges]
-   
+
+    def __str__(self):
+        return str(self.__getstate__())
+
     def __getstate__(self):
         return {"nodes": self.nodes,
                 "edges": self.edges,
@@ -148,6 +155,37 @@ class Graph(object):
         _g.layout(prog="dot")
         _g.draw(fname)
 
+class DjikstraWanderer(object):
+    def __init__(self, graph, start, end):
+        self.graph = copy.deepcopy(graph)
+        self.unsolved = copy.deepcopy(self.graph.nodes)
+        self.distances = {}
+        self.start = start
+        self.end = end
+        for k in self.unsolved:
+            self.distances[k] = None
+        self.setDistance(start, 0)
+        print self.unsolved
+
+    def setDistance(self, node, distance):
+        for n, existing_node in enumerate(self.distances):
+            if existing_node == node:
+                self.distances[existing_node] = distance
+                break
+
+    def getConnected(self, node):
+        for n, existing_node in enumerate(self.distances):
+            if existing_node == node:
+                return existing_node.connected_to
+
+    def step(self, current):
+        print self.distances
+        print self.getConnected(current)
+    
+    def run(self):
+        self.step(self.start)
+        print "Djikstra complete"
+
 class BruteWanderer(object):
     def __init__(self, graph, num):
         self.tree = {}
@@ -168,6 +206,7 @@ class BruteWanderer(object):
             print "Path is :"
             print self.walked
             return None
+
         possibles = self.tree[str(start)]
         for x in possibles:
             e = Edge(start, x)
@@ -249,11 +288,15 @@ class MainView(qtg.QWidget):
         widgets.append(button)
 
     def wanderGraph(self, click):
-        print "Wander!"
-        for i in range(len(self.graph.nodes)):
-            w = BruteWanderer(copy.deepcopy(self.graph), i)
-            w.run()
-            del w
+        print "Wander!" 
+        d = DjikstraWanderer(copy.deepcopy(self.graph), 1, 5)
+        d.run()
+        del d
+       
+        #for i in range(len(self.graph.nodes)):
+        #    w = BruteWanderer(copy.deepcopy(self.graph), i)
+        #    w.run()
+        #    del w
 
     def initWander(self, widgets):
         button = qtg.QPushButton("Wander")
