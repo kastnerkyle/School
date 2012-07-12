@@ -65,7 +65,10 @@ class Edge(object):
             self.weight = float(weight)
 
     def __eq__(self, other):
-        return len(self.nodes) == len([True for i in other.nodes if i in self.nodes])
+        if len(self.nodes) == 2:
+            return len(self.nodes) == len([True for i in self.nodes if i in other.nodes])
+        else:
+            return len(self.nodes[:-1]) == len([True for i in self.nodes[:-1] if i in other.nodes[:-1]]) and self.nodes[-1] == other.nodes[-1]
    
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -319,5 +322,5 @@ class MainView(qtg.QWidget):
 if __name__ == "__main__":
     app = qtg.QApplication(sys.argv)
     w = MainView()
-    w.resize(400, 400)
+    w.resize(600, 600)
     sys.exit(app.exec_())
