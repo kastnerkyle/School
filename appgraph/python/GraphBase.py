@@ -160,30 +160,77 @@ class DjikstraWanderer(object):
         self.graph = copy.deepcopy(graph)
         self.unsolved = copy.deepcopy(self.graph.nodes)
         self.distances = {}
+        self.available = []
+        self.path = []
         self.start = start
         self.end = end
         for k in self.unsolved:
+            #None is infinite distance
             self.distances[k] = None
-        self.setDistance(start, 0)
-        print self.unsolved
-
-    def setDistance(self, node, distance):
+            self.available.append(k)
+        self.setDistance(start, 0, prev=start)
+        self.removeAvailable(start)
+        
+    def removeAvailable(self, node):
+        for n, existing_node in enumerate(self.available):
+            if existing_node == node:
+                return self.available.pop(n)
+                
+    def setDistance(self, node, distance, prev=None):
         for n, existing_node in enumerate(self.distances):
             if existing_node == node:
                 self.distances[existing_node] = distance
                 break
-
+            
+    def getDistance(self, node):
+       for n, existing_node in enumerate(self.distances):
+            if existing_node == node:
+                return self.distances[existing_node]
+  
+    def minDistance(self):
+        #TODO FIX THIS HACKERY
+        min_val = 1000000
+        min_node = 1000000
+        for n in self.available:
+            if self.getDistance(n) == 0 or self.getDistance(n) == None:
+                continue
+            elif self.getDistance(n) < min_val:
+                min_val = self.getDistance(n)
+                min_node = n
+        return (min_node, min_val)
+               
     def getConnected(self, node):
         for n, existing_node in enumerate(self.distances):
             if existing_node == node:
                 return existing_node.connected_to
 
+    def matchEdge(self, start, stop):
+        for n, existing_edge in enumerate(self.graph.edges):
+            if existing_edge.nodes[0] == start and existing_edge.nodes[1] == stop:
+               return existing_edge.weight
+
     def step(self, current):
-        print self.distances
-        print self.getConnected(current)
-    
+        connected = self.getConnected(current)
+        for c in connected:
+            dist = self.matchEdge(current, c)
+            if self.getDistance(c) == None or dist < self.getDistance(c):
+                self.setDistance(c, dist, prev=current)
+        
+        [min_node, min_val] = self.minDistance()
+        self.removeAvailable(min_node)
+        return (min_node, min_val)
+                    
     def run(self):
-        self.step(self.start)
+        at = self.start
+        while True:
+            [next, weight] = self.step(at)
+            if self.matchEdge(at, next) == weight:
+                self.path.append(at)
+            at = next
+            if next == self.end:
+                self.path.append(at)
+                print self.path
+                break
         print "Djikstra complete"
 
 class BruteWanderer(object):
