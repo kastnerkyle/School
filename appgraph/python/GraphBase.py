@@ -62,11 +62,11 @@ class Edge(object):
             self.weight = None
         else:
             try:
-               float(weight)
+               [float(x) for x in weight]
             except ValueError:
                print "Must be convertable to float!"
-            self.nodes = [Node(source), Node(dest), float(weight)]
-            self.weight = float(weight)
+            self.nodes = [Node(source), Node(dest)]
+            self.weight = weight
 
     def __eq__(self, other):
         if len(self.nodes) == 2:
@@ -294,14 +294,22 @@ class MainView(qtg.QWidget):
  
     def fillTable(self):
         for i,j in zip(self.graph.getEdges(), range(self.table.rowCount())):
-            self.table.setItem(j, 0, qtg.QTableWidgetItem(str(i.nodes[0])))
-            self.table.setItem(j, 1, qtg.QTableWidgetItem(str(i.nodes[1])))
-            self.table.setItem(j, 2, qtg.QTableWidgetItem(str(i.nodes[2])))
+            for n in range(self.table.columnCount()):
+                if n < 2:
+                    self.table.setItem(j, n, qtg.QTableWidgetItem(str(i.nodes[n])))
+                else:
+                    self.table.setItem(j, n, qtg.QTableWidgetItem(str(i.weight[n-2])))
+                
 
     def initTable(self, widgets):
         self.table.setRowCount(100)
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Source", "Destination", "Weight"])
+        self.table.setColumnCount(6)
+        self.table.setHorizontalHeaderLabels(["Source",
+                                              "Destination",
+                                              "Distance",
+                                              "Safety",
+                                              "Speed",
+                                              "Facilities"])
         widgets.append(self.table)
 
     def getTableData(self, click):
@@ -309,18 +317,22 @@ class MainView(qtg.QWidget):
         self.graph.clearAll()
         #Match any cells with text in them
         table_items = self.table.findItems(".+", qtc.Qt.MatchRegExp)
+        #Get the set of column membership, so that the len()
+        #indicates the number of items
+        num_columns = int(self.table.columnCount()) 
         table_items = [{"row":x.row(), "name":str(x.text())} 
                        for x in table_items]
-        #Sort into list of [source1, dest1, weight1, source2, dest2, weight2...]
+        #Sort into list of [source1, dest1, weights..., source2, dest2, weights...]
         table_items = [x["name"] for x in 
                        sorted(table_items, key=lambda x: x["row"])]
         #Split sorted list into list of tuples (source, dest, weight)
-        table_items = map(None, *([iter(table_items)]*3))
+        
+        table_items = map(None, *([iter(table_items)]*num_columns))
         #Remove any tuples without source, dest, and weight
         table_items = [filter(None, x) for x in table_items]
-        table_items = filter(lambda x: len(x) == 3, table_items)
+        table_items = filter(lambda x: len(x) == num_columns, table_items)
         #Add edges to graph
-        [self.graph.addEdge(x[0], x[1], weight=x[2]) for x in table_items]
+        [self.graph.addEdge(x[0], x[1], weight=x[2:]) for x in table_items]
         #Plot new edges
         self.graph_pixmap = qtg.QPixmap(self.createGraph(self.graph))
         self.graph_host.setPixmap(self.graph_pixmap)
@@ -362,9 +374,8 @@ class MainView(qtg.QWidget):
     
     def clearTableData(self, click):
         for i in range(self.table.rowCount()):
-            self.table.setItem(i, 0, qtg.QTableWidgetItem())
-            self.table.setItem(i, 1, qtg.QTableWidgetItem())
-            self.table.setItem(i, 2, qtg.QTableWidgetItem())
+            for j in range(self.table.columnCount()):
+                self.table.setItem(i, j, qtg.QTableWidgetItem())
                     
     def initClear(self, widgets):
         button = qtg.QPushButton("Clear")
@@ -412,5 +423,5 @@ class MainView(qtg.QWidget):
 if __name__ == "__main__":
     app = qtg.QApplication(sys.argv)
     w = MainView()
-    w.resize(600, 600)
+    w.resize(850, 600)
     sys.exit(app.exec_())
