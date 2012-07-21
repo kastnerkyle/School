@@ -66,7 +66,7 @@ class Edge(object):
             except ValueError:
                print "Must be convertable to float!"
             self.nodes = [Node(source), Node(dest)]
-            self.weight = weight
+            self.weight = map(float, weight)
 
     def __eq__(self, other):
         if len(self.nodes) == 2:
@@ -88,6 +88,9 @@ class Edge(object):
 
     def __len__(self):
         return len(self.nodes)
+
+    def getWeight(self):
+        return sum(self.weight)
 
 class Graph(object):
     def __init__(self, edges=None, nodes=None, is_directed=False, is_strict=False):
@@ -207,7 +210,7 @@ class DjikstraWanderer(object):
     def matchEdge(self, start, stop):
         for n, existing_edge in enumerate(self.graph.edges):
             if existing_edge.nodes[0] == start and existing_edge.nodes[1] == stop:
-               return existing_edge.weight
+               return existing_edge.getWeight()
 
     def step(self, current):
         connected = self.getConnected(current)
@@ -348,7 +351,7 @@ class MainView(qtg.QWidget):
 
     def wanderGraph(self, click):
         print "Wander!" 
-        d = DjikstraWanderer(copy.deepcopy(self.graph), 1, 5)
+        d = DjikstraWanderer(copy.deepcopy(self.graph), 1, 3)
         d.run()
         del d
        
