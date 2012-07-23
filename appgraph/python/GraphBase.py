@@ -9,6 +9,7 @@ import copy
 import time 
 #http://kmkeen.com/python-trees/2009-05-30-11-05-40-138.html
 from collections import deque
+import operator
 
 #BUGS:
 #Can't Wander without first updating
@@ -54,9 +55,10 @@ class Node(object):
         return 1
 
 class Edge(object):
-    def __init__(self, source, dest, weight=None, is_directed=False):
+    def __init__(self, source, dest, weight=None, function=operator.add, is_directed=False):
         self.directed = is_directed
         self.color = None
+        self.weight_function = function
         if weight == None or weight == "":
             self.nodes = [Node(source), Node(dest)]
             self.weight = None
@@ -89,8 +91,16 @@ class Edge(object):
     def __len__(self):
         return len(self.nodes)
 
+    def setFunction(self, func):
+        try:
+            self.weight_function = func
+        except ValueError:
+            "Function definition requires either 1 argument (to apply between all weights) or 3. Choices are +, -, *, /"
+
     def getWeight(self):
-        return sum(self.weight)
+        print self.weight
+        print self.weight_function
+        return reduce(self.weight_function, self.weight)
 
 class Graph(object):
     def __init__(self, edges=None, nodes=None, is_directed=False, is_strict=False):
@@ -128,12 +138,11 @@ class Graph(object):
     def clearNodes(self):
         del self.nodes[:]
 
-    def addEdge(self, source, dest, weight=None, is_directed=False):
-        print weight 
+    def addEdge(self, source, dest, weight=None, function=operator.add, is_directed=False):
         if weight != None:
-           self.edges.append(Edge(source, dest, weight=weight))
+           self.edges.append(Edge(source, dest, weight=weight, function=function))
         else:
-            self.edges.append(Edge(source, dest))
+            self.edges.append(Edge(source, dest, function=function))
         self.addNode(source, connection=dest)
         self.addNode(dest, connection=source)
 
@@ -274,6 +283,8 @@ class MainView(qtg.QWidget):
         self.graph_pixmap = qtg.QPixmap(self.createGraph(self.graph)).scaledToHeight(self.height())
         self.table = qtg.QTableWidget()
         self.save_fname = "graph.pickle"
+        self.op_boxes = []
+        self.weight_boxes = []
         try:
             f = open(self.save_fname, "rb")
             self.graph = pickle.load(f)
@@ -303,7 +314,6 @@ class MainView(qtg.QWidget):
                 else:
                     self.table.setItem(j, n, qtg.QTableWidgetItem(str(i.weight[n-2])))
                 
-
     def initTable(self, widgets):
         self.table.setRowCount(100)
         self.table.setColumnCount(6)
@@ -340,8 +350,17 @@ class MainView(qtg.QWidget):
         self.graph_pixmap = qtg.QPixmap(self.createGraph(self.graph))
         self.graph_host.setPixmap(self.graph_pixmap)
 
+    def getOps(self, click):
+        for i in self.op_boxes:
+            print i.currentText()
+
+    def getWeights(self, click):
+        for i in self.weight_boxes:
+            print i.text()     
+
     def updateGraph(self, click):
-        print "Update!"
+        self.getOps(click)
+        self.getWeights(click)
 
     def initUpdate(self, widgets):
         button = qtg.QPushButton("Update")
@@ -351,7 +370,7 @@ class MainView(qtg.QWidget):
 
     def wanderGraph(self, click):
         print "Wander!" 
-        d = DjikstraWanderer(copy.deepcopy(self.graph), 1, 3)
+        d = DjikstraWanderer(copy.deepcopy(self.graph), 1, 6)
         d.run()
         del d
        
@@ -389,6 +408,37 @@ class MainView(qtg.QWidget):
     def debugClass(self, click):
         print [x.Details() for x in self.graph.getNodes()]
 
+    def initWeightEntry(self, widgets):
+        form = qtg.QLineEdit()
+        mask = "dddD.dd"
+        form.setInputMask(mask)
+        widgets.append(form)
+        self.weight_boxes.append(form)
+           
+    def initOpBox(self, widgets):
+        box = qtg.QComboBox()
+        box.addItem("+")
+        box.addItem("*")
+        box.addItem("^")
+        widgets.append(box)
+        self.op_boxes.append(box)
+
+    def initFormulaLine(self, widgets):
+        label = qtg.QLabel("Formula for weight combination : ")
+        weight_boxes = []
+        op_boxes = []
+        #-2 to remove source, dest
+        for i in range(self.table.columnCount()-2):
+            #Skip the ops box the first time
+            if i != 0:
+                self.initOpBox(op_boxes)
+            self.initWeightEntry(weight_boxes)
+        widgets.append(label)
+        [[widgets.append(n) for n in x] for x in zip(weight_boxes, op_boxes)]
+        
+        #zip won't work for uneven counts 
+        widgets.append(weight_boxes[-1])
+
     def initDebug(self, widgets):
         button = qtg.QPushButton("Debug")
         button.clicked[bool].connect(self.debugClass)
@@ -401,10 +451,13 @@ class MainView(qtg.QWidget):
         top_right_widgets = []
         self.initTable(top_right_widgets)
 
+        middle_widgets = []
+        self.initFormulaLine(middle_widgets)
+
         bottom_widgets = []
         self.initClear(bottom_widgets)
         self.initUpdate(bottom_widgets)
-        self.initDebug(bottom_widgets)
+        #self.initDebug(bottom_widgets)
         self.initWander(bottom_widgets)
         self.initSave(bottom_widgets)
 
@@ -412,11 +465,16 @@ class MainView(qtg.QWidget):
         [hbox_top.addWidget(x) for x in top_left_widgets]
         [hbox_top.addWidget(x) for x in top_right_widgets]
 
+        hbox_middle = qtg.QHBoxLayout()
+        [hbox_middle.addWidget(x) for x in middle_widgets]
+        hbox_middle.addStretch(1)
+
         hbox_bottom = qtg.QHBoxLayout()
         [hbox_bottom.addWidget(x) for x in bottom_widgets] 
         
         vbox = qtg.QVBoxLayout()
         vbox.addLayout(hbox_top)
+        vbox.addLayout(hbox_middle)
         vbox.addLayout(hbox_bottom)
  
         self.setLayout(vbox)
@@ -426,5 +484,5 @@ class MainView(qtg.QWidget):
 if __name__ == "__main__":
     app = qtg.QApplication(sys.argv)
     w = MainView()
-    w.resize(850, 600)
+    w.resize(1200, 600)
     sys.exit(app.exec_())
