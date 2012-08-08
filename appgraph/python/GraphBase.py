@@ -95,7 +95,7 @@ class Edge(object):
         try:
             self.weight_function = func
         except ValueError:
-            "Function definition requires either 1 argument (to apply between all weights) or 3. Choices are +, -, *, /"
+            "Function definition requires either 1 argument to be applied between each or len(weights)-1 arguments"
 
     def getWeight(self):
         print self.weight
@@ -328,8 +328,10 @@ class MainView(qtg.QWidget):
     def getTableData(self, click):
         #Clear all nodes and edges
         self.graph.clearAll()
+
         #Match any cells with text in them
         table_items = self.table.findItems(".+", qtc.Qt.MatchRegExp)
+
         #Get the set of column membership, so that the len()
         #indicates the number of items
         num_columns = int(self.table.columnCount()) 
@@ -338,25 +340,74 @@ class MainView(qtg.QWidget):
         #Sort into list of [source1, dest1, weights..., source2, dest2, weights...]
         table_items = [x["name"] for x in 
                        sorted(table_items, key=lambda x: x["row"])]
-        #Split sorted list into list of tuples (source, dest, weight)
-        
+
+        #Split sorted list into list of tuples (source, dest, weight)        
         table_items = map(None, *([iter(table_items)]*num_columns))
+
         #Remove any tuples without source, dest, and weight
         table_items = [filter(None, x) for x in table_items]
         table_items = filter(lambda x: len(x) == num_columns, table_items)
+
+        #Get max of each weight column using strides
+        #2: is weight values for each path
+        weights = [map(float, x[2:]) for x in table_items]
+        table_items = [x[:2] for x in table_items]
+
+        #Combine each column's values together into a tuple, then take the max
+        maxes = map(max, zip(*weights))
+        
+        #Normalize by using the value computed from maxes
+        norm_weights = []
+        for w in weights:
+            norm = []
+            for n,m in enumerate(maxes):
+                norm.append(w[n]/m)
+            norm_weights.append(norm)
+
+        #Now do the weighting
+        final_weights = []
+        for w in norm_weights:
+            final = []
+            for n,v in enumerate(self.getWeights(None)):
+                final.append(v*w[n])
+            final_weights.append(final)         
+       
+        f = operator.add
+
         #Add edges to graph
-        [self.graph.addEdge(x[0], x[1], weight=x[2:]) for x in table_items]
+        [self.graph.addEdge(x[0][0], x[0][1], weight=x[1], function=f) for x in zip(table_items, final_weights)]
+        self.fillTable()
+
         #Plot new edges
         self.graph_pixmap = qtg.QPixmap(self.createGraph(self.graph))
         self.graph_host.setPixmap(self.graph_pixmap)
 
     def getOps(self, click):
+        if click != None:
+           print "Button call for getOps"
+           return
+
+        opmap = {"+": operator.add,
+                 "x": operator.mul,
+                 "^": operator.pow}
+        ops = []
         for i in self.op_boxes:
-            print i.currentText()
+            ops.append(opmap[str(i.currentText())])
+        return ops
 
     def getWeights(self, click):
-        for i in self.weight_boxes:
-            print i.text()     
+        if click != None:
+           print "Button call for getWeights"
+           return 
+
+        weights = []
+        for n,b in enumerate(self.weight_boxes):
+            try:
+                weights.append(float(b.text()))
+            except ValueError:
+                print "No entry found for box",n,"! Using 1 instead"
+                weights.append(1.)
+        return weights     
 
     def updateGraph(self, click):
         self.getOps(click)
