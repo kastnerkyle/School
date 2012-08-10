@@ -60,4 +60,9 @@ if __name__=="__main__":
     #Split based on the ringtone tag using non-greedy matching
     filtered_lyrics = re.split("Send.*?Cell", unfiltered_lyrics)
     #Center of array should hold lyrics
-    print filtered_lyrics[1]
+    try:  
+        print filtered_lyrics[1]
+    except IndexError:
+        print "FAILED TO PARSE LYRICS"
+        print "SAVING UNFILTERED"
+        print unfiltered_lyrics
