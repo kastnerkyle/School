@@ -1,0 +1,4 @@
+cpan App::cpanminus
+cpanm Digest::SHA1
+#http://search.cpan.org/~palvaro/Bloom-Faster-1.6/lib/Bloom/Faster.pm
+cpanm Bloom::Faster
