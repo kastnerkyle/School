@@ -10,11 +10,11 @@ use Bloom::Faster;
 $outdir = "filter";
 GetOptions('outdir=s' => \$outdir);
 
-open $gram, $ARGV[0] or die $!;
+open $ngram, $ARGV[0] or die $!;
 
 $filt = new Bloom::Faster({n => 100000, e => 0.01});
 
-while(<$gram>) {
+while(<$ngram>) {
     chomp;
     ($token, $count) = split("\t", $_);
     #Should never have a duplicate add, but still check
@@ -22,6 +22,8 @@ while(<$gram>) {
          print "Duplicate add for $token\n";
     }
 }
+
+close $ngram or die $!;
 
 mkdir "$outdir" unless -d "$outdir";
 $infile = "$ARGV[0]";
