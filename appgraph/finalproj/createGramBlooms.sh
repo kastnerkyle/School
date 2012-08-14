@@ -3,6 +3,7 @@
 lyrics_dir=${1:-"lyrics"}
 ngrams_dir=${2:-"grammified"}
 ngrams_prog=${3:-"ngrams/ngrams"}
+filter_dir=${4:-"filters"}
 
 if [[ ! -e $grams_dir ]]; then
     mkdir -p $grams_dir
@@ -40,7 +41,7 @@ cleanup_ngrams() {
 
 make_blooms () {
     for f in $(ls $1); do
-        ./buildBloom.pl $1/$f --outdir=filter
+        ./buildBloom.pl $1/$f --outdir=$filter_dir
     done
 }
 
