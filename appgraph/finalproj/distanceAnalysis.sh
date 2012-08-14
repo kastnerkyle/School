@@ -31,11 +31,13 @@ get_distance() {
 }
 
 job () {
+    echo "Start processing for $k"
     pushd ../$ngrams_dir 2>&1 > /dev/null
     for j in $(ls *.$2); do
         score=$(get_distance $j $1)
         echo $(get_gram_name $j),$2,$score >> ../$distance_dir/$(get_filt_name $1)
     done
+    echo "$k processing complete"
     popd 2>&1 > /dev/null
 }
 
@@ -44,14 +46,16 @@ if [[ ! -e $distance_dir ]]; then
 fi
 
 pushd $filters_dir 2>&1 > /dev/null
+max_jobs=8
 for i in $(ls *.1); do
     if [[ -e $(get_filt_name $i) ]]; then
-       echo "" > ../$distance_dir/$(get_filt_name $i) 
+        echo "" > ../$distance_dir/$(get_filt_name $i) 
     fi 
     for k in $(get_filt_family $i).{1,2,3}; do
-        echo "Start processing for $k"
-        job $k $(get_filt_type $k)
-        echo "$k processing complete"
+        job $k $(get_filt_type $k) &
+        while [[ `jobs | wc -l` -gt max_jobs ]]; do 
+           sleep 1
+        done
     done
 done
 popd 2>&1 > /dev/null
