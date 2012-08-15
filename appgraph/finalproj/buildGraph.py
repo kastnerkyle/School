@@ -1,9 +1,11 @@
 #!/usr/bin/python
 import networkx as nx
 import glob
+import pickle 
+import random
+
 distance_dir = "distances"
 songs_with_distances = glob.glob(distance_dir + "/*")
-import pickle 
 
 if __name__ == "__main__":
     band_graph = nx.Graph()
@@ -13,13 +15,16 @@ if __name__ == "__main__":
         f = open(sf)
         for line in f:
             [ngram_type, count] = map(int, line.split(",")[-2:])
-            count = (ngram_type*count)*(ngram_type*5)
+            count = (ngram_type*count)
             if count > max_in_all_files:
                max_in_all_files = count
         f.close()
     print "Max value is " + str(max_in_all_files) + ", weights normalized by this value"
-        
-    for sf in songs_with_distances:
+    chosen_songs = []
+    for i in range(2):
+        chosen_songs.append(random.choice(songs_with_distances))
+     
+    for sf in chosen_songs:
         try:
             [source_band, source_song] = sf.split(":")
             source_band = source_band[len(distance_dir)+1:]
@@ -30,7 +35,7 @@ if __name__ == "__main__":
         for line in f:
             [ngram_type, count] = map(int, line.split(",")[-2:])
             match_band_and_song = "".join(line.split(",")[:-2])
-            count = (ngram_type*count)*(ngram_type*5)
+            count = (ngram_type*count)
             try:
                [match_band, match_song] = match_band_and_song.split(":")[0:2]
             except ValueError:
