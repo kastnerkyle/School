@@ -5,8 +5,8 @@ ngrams_dir=${2:-"grammified"}
 ngrams_prog=${3:-"ngrams/ngrams"}
 filter_dir=${4:-"filters"}
 
-if [[ ! -e $grams_dir ]]; then
-    mkdir -p $grams_dir
+if [[ ! -e $ngrams_dir ]]; then
+    mkdir -p $ngrams_dir
 fi
 
 run_ngram() {
