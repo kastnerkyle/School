@@ -14,14 +14,18 @@ if __name__ == "__main__":
     for sf in songs_with_distances:
         f = open(sf)
         for line in f:
-            [ngram_type, count] = map(int, line.split(",")[-2:])
-            count = (ngram_type*count)
-            if count > max_in_all_files:
-               max_in_all_files = count
+            try:
+                [ngram_type, count] = map(int, line.split(",")[-2:])
+                count = (ngram_type*count)
+                if count > max_in_all_files:
+                   max_in_all_files = count
+            except ValueError:
+                continue
         f.close()
     print "Max value is " + str(max_in_all_files) + ", weights normalized by this value"
+    
     chosen_songs = []
-    for i in range(2):
+    for i in range(15):
         chosen_songs.append(random.choice(songs_with_distances))
      
     for sf in chosen_songs:
@@ -33,7 +37,13 @@ if __name__ == "__main__":
             source_song = "Unknown_Song"
         f = open(sf)
         for line in f:
-            [ngram_type, count] = map(int, line.split(",")[-2:])
+            try:
+                [ngram_type, count] = map(int, line.split(",")[-2:])
+                count = (ngram_type*count)
+                if count > max_in_all_files:
+                   max_in_all_files = count
+            except ValueError:
+                continue
             match_band_and_song = "".join(line.split(",")[:-2])
             count = (ngram_type*count)
             try:
