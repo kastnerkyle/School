@@ -33,17 +33,21 @@ if args.verbose:
 if args.random:
     centroid_type = "random"
     if args.verbose:
-        print
+        print "Using uniform random algorithm for initial centroid distribution"
     means = [random.randrange(min(data),max(data),1) for i in range(centroid_count)]
-    print "Centroid calculations complete"
+    if args.verbose:
+        print "Centroid calculations complete"
 else:
     centroid_type = "metropolis_hastings"
+    if args.verbose:
+        print "Using Metropolis-Hastings algorithm for initial centroid distribution"
     start = data[random.randrange(0,len(data),1)]
     std_dev = np.std(data) #arbitrary std_dev
     means = []
     prev = start
     while len(means) < centroid_count:
-        print "Currently " + `len(means)` + " centroids calculated"
+        if args.verbose:
+            print "Currently " + `len(means)` + " centroids calculated"
         candidate = prev + std_dev * np.random.randn()
         prob_prev = len(filter(lambda x: x < prev, data))/float(len(data))
         prob_candidate = len(filter(lambda x: x < candidate, data))/float(len(data))
@@ -55,12 +59,15 @@ else:
             if random.random() <= acceptance:
                 prev = candidate
                 means.append(candidate)
+    if args.verbose:
+        print "Centroid calculation complete"
 
 bound = 0.1 #arbitrary bound for mean movement, must be between 0 and 1, higher values allow centroids to move more
 
 data_to_quant = {}
 for i,d in enumerate(data):
-    print "Processing sample "
+    if args.verbose:
+        print "Processing sample " + `i` + " of " + `len(data)`
     smallest_error = None
     for n,v in enumerate(means):
         error = abs(d-v)
