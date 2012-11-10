@@ -27,7 +27,7 @@ centroid_count = 2**args.bits
 
 if args.verbose:
     print "File has a sample rate of " + `sr` + " samples per second"
-    print "File has " + `len(data)` + " values, " + `len(data)/float(sr)` " seconds"
+    print "File has " + `len(data)` + " values, " + `len(data)/float(sr)` + " seconds"
     print "Vector quantization will use " + `centroid_count` + " centroids for k-means calculations"
 
 if args.random:
