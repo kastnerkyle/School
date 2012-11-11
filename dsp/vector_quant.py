@@ -36,15 +36,20 @@ if args.verbose > 0:
 
 if args.uniform:
     centroid_type = "uniform"
-    if args.verbose:
+    if args.verbose > 0:
         print "Using uniform random algorithm for initial centroid distribution"
-    means = [random.randrange(min(data),max(data),1) for i in range(centroid_count)]
+    means = [random.choice(data) for i in range(centroid_count)]
+    if args.verbose > 1:
+        print "Means initialized at:"
+        print means
+
     if args.verbose > 0:
         print "Centroid calculations complete"
 
 elif args.rejection:
     centroid_type = "rejection"
-
+    if args.verbose > 0:
+        print "Using rejection sampling algorithm for initial centroid distribution"
     if args.single:
         split = 1
     else:
@@ -53,10 +58,10 @@ elif args.rejection:
     def rejection_run(data):
         means = []
         while len(means) < centroid_count/split:
-            i = random.randrange(0,len(data),1)
-            prob_candidate = len(filter(lambda x: x < data[i], data))/float(len(data))
+            candidate = random.choice(data)
+            prob_candidate = len(filter(lambda x: x < candidate, data))/float(len(data))
             if random.random() < prob_candidate:
-                means.append(data[i])
+                means.append(candidate)
         return means
 
     p = Pool(split)
@@ -94,14 +99,16 @@ else:
         print "Using " + `split` + " cores for the Metropolis Hastings calculations"
 
     def metropolis_run(data):
-        start = data[random.randrange(0,len(data),1)]
-        std_dev = np.std(data) #arbitrary std_dev larger value will give better centroid spread
+        start = random.choice(data)
+        std_dev = np.std(data) #arbitrary std_dev, larger value will give better centroid spread, but too large will break the sampling
         means = []
         prev = start
         while len(means) < centroid_count/split:
             if args.verbose > 1:
                 print "Currently " + `len(means)` + " centroids calculated"
+            #Random walk for next candidate
             candidate = prev + std_dev * np.random.randn()
+            #Don't need conditional here because the probabilities are not dependent i.e. P(B|A) = P(B)
             prob_prev = len(filter(lambda x: x < prev, data))/float(len(data))
             prob_candidate = len(filter(lambda x: x < candidate, data))/float(len(data))
             acceptance = prob_candidate/prob_prev
@@ -134,6 +141,7 @@ else:
 
 bound = 0.1 #arbitrary bound for mean movement, must be between 0 and 1, higher values allow centroids to move more
 
+#Assignment dictionary which shows what centroid each data point is beholden to
 data_to_quant = {}
 for i,d in enumerate(data):
     if args.verbose > 1 and i%10000 == 0:
@@ -147,6 +155,7 @@ for i,d in enumerate(data):
     data_to_quant[i] = closest_k
     means[closest_k] = means[closest_k]*(1-bound) + d*bound
 
+#Actually quantize each value
 out = np.zeros(len(data))
 for k in data_to_quant.keys():
     out[k] = int(means[data_to_quant[k]])
