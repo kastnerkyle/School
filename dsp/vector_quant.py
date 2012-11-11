@@ -14,9 +14,11 @@ from multiprocessing import Pool, cpu_count
 parser = argparse.ArgumentParser(description="Apply vector quantization using k-means clustering to a linearly encoded WAV file")
 parser.add_argument(dest="filename", help="WAV file to be processed")
 parser.add_argument("-b", "--bits", dest="bits", action="store", default=4, type=int, help="Integer number of bits used in quantized output, default is 4")
-parser.add_argument("-r", "--random", dest="random", action="store_true", help="Use uniform random algorithm for centroid initialization instead of Metropolis-Hastings")
 parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="Show verbose output")
-parser.add_argument("-s", "--single", dest="single", action="store_true", help="Single core mode for Metropolis Hastings algorithm")
+parser.add_argument("-s", "--single", dest="single", action="store_true", help="Single core mode")
+group = parser.add_mutually_exclusive_group()
+group.add_argument("-u", "--uniform", dest="uniform", action="store_true", help="Use uniform random algorithm for centroid initialization instead of Metropolis-Hastings")
+group.add_argument("-r", "--rejection", dest="rejection", action="store_true", help="Use rejection sampling for centroid initialization instead of Metropolis-Hastings")
 
 try:
     args = parser.parse_args()
@@ -32,20 +34,59 @@ if args.verbose > 0:
     print "File has " + `len(data)` + " values, " + `len(data)/float(sr)` + " seconds"
     print "Vector quantization will use " + `centroid_count` + " centroids for k-means calculations"
 
-if args.random:
-    centroid_type = "random"
+if args.uniform:
+    centroid_type = "uniform"
     if args.verbose:
         print "Using uniform random algorithm for initial centroid distribution"
     means = [random.randrange(min(data),max(data),1) for i in range(centroid_count)]
-    if args.verbose:
+    if args.verbose > 0:
         print "Centroid calculations complete"
+
+elif args.rejection:
+    centroid_type = "rejection"
+
+    if args.single:
+        split = 1
+    else:
+        split = cpu_count()
+
+    def rejection_run(data):
+        means = []
+        while len(means) < centroid_count/split:
+            i = random.randrange(0,len(data),1)
+            prob_candidate = len(filter(lambda x: x < data[i], data))/float(len(data))
+            if random.random() < prob_candidate:
+                means.append(data[i])
+        return means
+
+    p = Pool(split)
+    centroids = p.map_async(rejection_run, [data]*split)
+    p.close()
+    means = []
+    for group in centroids.get():
+        means.extend(group)
+
+    if args.verbose > 0:
+        print "Centroid calculations complete"
+
+    if len(means) != centroid_count:
+        print "Split value (number of available cores) must be evenly divisible into 2^bits. Use the --single or -s option!"
+        sys.exit()
+
+    if args.verbose > 1:
+        print "Means initialized at: "
+        print means
+
+    if args.verbose > 0:
+        print "Centroid calculation complete"
+
 else:
     centroid_type = "metropolis_hastings"
     if args.verbose > 0:
         print "Using Metropolis-Hastings algorithm for initial centroid distribution"
 
     if args.single:
-        split=1
+        split = 1
     else:
         split = cpu_count()
 
