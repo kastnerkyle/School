@@ -112,7 +112,7 @@ elif args.rejection:
         print "Centroid calculation complete"
 
 else:
-    centroid_type = "metropolis_hastings"
+    centroid_type = "metropolishastings"
     if args.verbose > 0:
         print "Using Metropolis-Hastings algorithm for initial centroid distribution"
 
