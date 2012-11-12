@@ -14,9 +14,11 @@ from multiprocessing import Pool, cpu_count
 parser = argparse.ArgumentParser(description="Apply vector quantization using k-means clustering to a linearly encoded WAV file")
 parser.add_argument(dest="filename", help="WAV file to be processed")
 parser.add_argument("-b", "--bits", dest="bits", action="store", default=4, type=int, help="Integer number of bits used in quantized output, default is 4")
-parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="Show verbose output")
+parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="Show verbose output, use -vv for highest verbosity")
 parser.add_argument("-s", "--single", dest="single", action="store_true", help="Single core mode")
 group = parser.add_mutually_exclusive_group()
+group.add_argument("-z", "--zeroes", dest="zeroes", action="store_true", help="Use all zeroes for centroid initialization instead of Metropolis-Hastings")
+group.add_argument("-m", "--median", dest="median", action="store_true", help="Use data median for centroid initialization instead of Metropolis-Hastings")
 group.add_argument("-u", "--uniform", dest="uniform", action="store_true", help="Use uniform random algorithm for centroid initialization instead of Metropolis-Hastings")
 group.add_argument("-r", "--rejection", dest="rejection", action="store_true", help="Use rejection sampling for centroid initialization instead of Metropolis-Hastings")
 
@@ -39,6 +41,30 @@ if args.uniform:
     if args.verbose > 0:
         print "Using uniform random algorithm for initial centroid distribution"
     means = [random.choice(data) for i in range(centroid_count)]
+    if args.verbose > 1:
+        print "Means initialized at:"
+        print means
+
+    if args.verbose > 0:
+        print "Centroid calculations complete"
+
+elif args.zeroes:
+    centroid_type = "zeroes"
+    if args.verbose > 0:
+        print "Using all zeroes for initial centroid distribution"
+    means = [0]*centroid_count
+    if args.verbose > 1:
+        print "Means initialized at:"
+        print means
+
+    if args.verbose > 0:
+        print "Centroid calculations complete"
+
+elif args.median:
+    centroid_type = "median"
+    if args.verbose > 0:
+        print "Using all zeroes for initial centroid distribution"
+    means = [np.median(data)]*centroid_count
     if args.verbose > 1:
         print "Means initialized at:"
         print means
@@ -160,6 +186,6 @@ out = np.zeros(len(data))
 for k in data_to_quant.keys():
     out[k] = int(means[data_to_quant[k]])
 
-wavfile.write("vector_quantized_" + centroid_type + "_" + args.filename, sr, np.asarray(out).astype("int16"))
+wavfile.write("vector_quantized_" + `args.bits` + "bit_" + centroid_type + "_" + args.filename, sr, np.asarray(out).astype("int16"))
 
 print "Processing complete for " + args.filename
