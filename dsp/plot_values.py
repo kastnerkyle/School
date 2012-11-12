@@ -28,7 +28,14 @@ qtype = n[1]
 bit = n[2]
 technique = n[3]
 
-if technique in "metropolishastings uniform rejection zeroes median":
+if args.verbose > 0:
+    print "Title: " + title
+    print "Quantization type: " + qtype
+    print "Number of bits: " + bit
+    if technique in ["metropolishastings", "uniform", "rejection", "zeroes", "median"]:
+        print "Technique: " + technique
+
+if technique in ["metropolishastings", "uniform", "rejection", "zeroes", "median"]:
     plot.legend([orig_plot, quant_plot], ["Original 16bit wavfile",  title.title() + ", " + technique + " " + qtype + " " + bit + " file"])
 else:
     plot.legend([orig_plot, quant_plot], ["Original 16bit wavfile",  title.title() + ", " + qtype + " " + bit + " file"])
