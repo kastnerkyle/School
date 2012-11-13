@@ -10,6 +10,8 @@ import random
 import argparse
 import operator
 from multiprocessing import Pool, cpu_count
+from collections import Counter
+from functools import wraps
 
 parser = argparse.ArgumentParser(description="Apply vector quantization using k-means clustering to a linearly encoded WAV file")
 parser.add_argument(dest="filename", help="WAV file to be processed")
@@ -21,6 +23,8 @@ group.add_argument("-z", "--zeroes", dest="zeroes", action="store_true", help="U
 group.add_argument("-m", "--median", dest="median", action="store_true", help="Use data median for centroid initialization instead of Metropolis-Hastings")
 group.add_argument("-u", "--uniform", dest="uniform", action="store_true", help="Use uniform random algorithm for centroid initialization instead of Metropolis-Hastings")
 group.add_argument("-r", "--rejection", dest="rejection", action="store_true", help="Use rejection sampling for centroid initialization instead of Metropolis-Hastings")
+group.add_argument("-c", "--centers_of_mass", dest="centers_of_mass", action="store_true", help="Use centers of mass for centroid initialization instead of Metropolis-Hastings")
+group.add_argument("-w", "--weighted", dest="weighted", action="store_true", help="Use weighted line formula for centroid initialization instead of Metropolis-Hastings")
 
 try:
     args = parser.parse_args()
@@ -65,6 +69,34 @@ elif args.median:
     if args.verbose > 0:
         print "Using all zeroes for initial centroid distribution"
     means = [np.median(data)]*centroid_count
+    if args.verbose > 1:
+        print "Means initialized at:"
+        print means
+
+    if args.verbose > 0:
+        print "Centroid calculations complete"
+
+elif args.weighted:
+    centroid_type = "weighted"
+    cardinality = Counter(data)
+    ordered = sorted(set(data))
+    normed_cardinality = [cardinality[o]/float(len(data)) for o in ordered]
+    split = 1./centroid_count
+
+    means = []
+    cache = {}
+    prev_div = 0
+    for i,c in enumerate(normed_cardinality):
+        if i-1 in cache:
+            cache[i] = cache[i-1]+c
+            new_div = int(cache[i]/split)
+            if new_div > prev_div:
+                means.append(ordered[i])
+                prev_div = new_div
+        else:
+            #Should only happen for i = 0
+            cache[i] = c
+
     if args.verbose > 1:
         print "Means initialized at:"
         print means
