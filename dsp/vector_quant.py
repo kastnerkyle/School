@@ -78,24 +78,24 @@ elif args.median:
 
 elif args.weighted:
     centroid_type = "weighted"
-    cardinality = Counter(data)
+    hist = Counter(data)
     ordered = sorted(set(data))
-    normed_cardinality = [cardinality[o]/float(len(data)) for o in ordered]
+    normed_hist = [hist[o]/float(len(data)) for o in ordered]
     split = 1./centroid_count
 
     means = []
     cache = {}
     prev_div = 0
-    for i,c in enumerate(normed_cardinality):
+    for i,v in enumerate(normed_hist):
         if i-1 in cache:
-            cache[i] = cache[i-1]+c
+            cache[i] = cache[i-1]+v
             new_div = int(cache[i]/split)
             if new_div > prev_div:
                 means.append(ordered[i])
                 prev_div = new_div
         else:
             #Should only happen for i = 0
-            cache[i] = c
+            cache[i] = v
 
     if args.verbose > 1:
         print "Means initialized at:"
