@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import scipy.io.wavfile as wavfile
 import numpy as np
 import sys
