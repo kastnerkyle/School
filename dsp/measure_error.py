@@ -42,3 +42,8 @@ for f in args.quantized:
     if args.verbose > 0:
         print "Quantized filename: " + f
         pprint(stats[f])
+
+key_groups = {}
+all_mse = sorted([stats[k]["Mean Square Error"] for k in stats.keys()])
+plot.plot(all_mse)
+plot.show()
