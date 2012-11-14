@@ -44,6 +44,25 @@ for f in args.quantized:
         pprint(stats[f])
 
 key_groups = {}
-all_mse = sorted([stats[k]["Mean Square Error"] for k in stats.keys()])
-plot.plot(all_mse)
+types = ["metropolishastings", "median", "rejection", "uniform", "zeroes", "weighted"]
+for i in types:
+    key_groups[i] = []
+    [key_groups[i].append(name) if i in name else 0 for name in stats.keys()]
+print key_groups
+legend_text = []
+handles = []
+for k in key_groups.keys():
+    type_mse = []
+    type_rmse = []
+    type_snr = []
+    for i in range(2,14,2):
+        for fname in key_groups[k]:
+            type_mse.append(stats[fname]["Mean Square Error"]) if "_" + str(i) + "bit" in fname else 0
+            type_rmse.append(stats[fname]["Root Mean Square Error"]) if "_" + str(i) + "bit" in fname else 0
+            type_snr.append(stats[fname]["Signal to Noise Ratio"]) if "_" + str(i) + "bit" in fname else 0
+    h, = plot.plot(type_mse)
+    handles.append(h)
+    legend_text.append(k.title(), loc=2)
+print legend_text
+plot.legend(handles, legend_text)
 plot.show()
