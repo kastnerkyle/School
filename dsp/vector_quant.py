@@ -19,13 +19,13 @@ parser.add_argument("-b", "--bits", dest="bits", action="store", default=4, type
 parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="Show verbose output, use -vv for highest verbosity")
 parser.add_argument("-s", "--single", dest="single", action="store_true", help="Single core mode")
 group = parser.add_mutually_exclusive_group()
-group.add_argument("-z", "--zeroes", dest="zeroes", action="store_true", help="Use all zeroes for centroid initialization instead of Metropolis-Hastings")
-group.add_argument("-m", "--median", dest="median", action="store_true", help="Use data median for centroid initialization instead of Metropolis-Hastings")
-group.add_argument("-l", "--linear", dest="linear", action="store_true", help="Use linear assignment for centroid initialization instead of Metropolis-Hastings")
-group.add_argument("-u", "--uniform", dest="uniform", action="store_true", help="Use uniform random algorithm for centroid initialization instead of Metropolis-Hastings")
-group.add_argument("-r", "--rejection", dest="rejection", action="store_true", help="Use rejection sampling for centroid initialization instead of Metropolis-Hastings")
-group.add_argument("-c", "--centers_of_mass", dest="centers_of_mass", action="store_true", help="Use centers of mass for centroid initialization instead of Metropolis-Hastings")
-group.add_argument("-w", "--weighted", dest="weighted", action="store_true", help="Use weighted line formula for centroid initialization instead of Metropolis-Hastings")
+group.add_argument("-z", "--zeroes", dest="zeroes", action="store_true", help="Use all zeroes for centroid initialization ")
+group.add_argument("-m", "--median", dest="median", action="store_true", help="Use data median for centroid initialization ")
+group.add_argument("-l", "--linear", dest="linear", action="store_true", help="Use linear assignment for centroid initialization ")
+group.add_argument("-u", "--uniform", dest="uniform", action="store_true", help="Use uniform random algorithm for centroid initialization ")
+group.add_argument("-r", "--rejection", dest="rejection", action="store_true", help="Use rejection sampling for centroid initialization ")
+group.add_argument("-c", "--sculpters", dest="sculpters", action="store_true", help="Use weighted line formula for centroid initialization ")
+group.add_argument("-p", "--metropolishastings", dest="metropolishastings", action="store_true", help="Use metropolis hastings algorithm for centroid initialization ")
 
 try:
     args = parser.parse_args()
@@ -66,7 +66,7 @@ elif args.zeroes:
         print "Centroid calculations complete"
 
 elif args.linear:
-    centroid_type = "linear"
+    centroid_type = "vecl"
     if args.verbose > 0:
         print "Using linear assignment for initial centroid distribution"
     means = [x * (2**16/2**args.bits) - 2**15 for x in range((2**args.bits))]
@@ -89,8 +89,8 @@ elif args.median:
     if args.verbose > 0:
         print "Centroid calculations complete"
 
-elif args.weighted:
-    centroid_type = "weighted"
+elif args.sculpters:
+    centroid_type = "sculpters"
     hist = Counter(data)
     ordered = sorted(set(data))
     normed_hist = [hist[o]/float(len(data)) for o in ordered]
@@ -156,7 +156,7 @@ elif args.rejection:
     if args.verbose > 0:
         print "Centroid calculation complete"
 
-else:
+elif args.metropolishastings:
     centroid_type = "metropolishastings"
     if args.verbose > 0:
         print "Using Metropolis-Hastings algorithm for initial centroid distribution"
@@ -209,6 +209,10 @@ else:
 
     if args.verbose > 0:
         print "Centroid calculation complete"
+
+else:
+    parser.print_help()
+    sys.exit()
 
 bound = 0.1 #arbitrary bound for mean movement, must be between 0 and 1, higher values allow centroids to move more
 
