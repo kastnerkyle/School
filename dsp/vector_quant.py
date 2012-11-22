@@ -21,6 +21,7 @@ parser.add_argument("-s", "--single", dest="single", action="store_true", help="
 group = parser.add_mutually_exclusive_group()
 group.add_argument("-z", "--zeroes", dest="zeroes", action="store_true", help="Use all zeroes for centroid initialization instead of Metropolis-Hastings")
 group.add_argument("-m", "--median", dest="median", action="store_true", help="Use data median for centroid initialization instead of Metropolis-Hastings")
+group.add_argument("-l", "--linear", dest="linear", action="store_true", help="Use linear assignment for centroid initialization instead of Metropolis-Hastings")
 group.add_argument("-u", "--uniform", dest="uniform", action="store_true", help="Use uniform random algorithm for centroid initialization instead of Metropolis-Hastings")
 group.add_argument("-r", "--rejection", dest="rejection", action="store_true", help="Use rejection sampling for centroid initialization instead of Metropolis-Hastings")
 group.add_argument("-c", "--centers_of_mass", dest="centers_of_mass", action="store_true", help="Use centers of mass for centroid initialization instead of Metropolis-Hastings")
@@ -64,10 +65,22 @@ elif args.zeroes:
     if args.verbose > 0:
         print "Centroid calculations complete"
 
+elif args.linear:
+    centroid_type = "linear"
+    if args.verbose > 0:
+        print "Using linear assignment for initial centroid distribution"
+    means = [x * (2**16/2**args.bits) - 2**15 for x in range((2**args.bits))]
+    if args.verbose > 1:
+        print "Means initialized at:"
+        print means
+
+    if args.verbose > 0:
+        print "Centroid calculations complete"
+
 elif args.median:
     centroid_type = "median"
     if args.verbose > 0:
-        print "Using all zeroes for initial centroid distribution"
+        print "Using median value for initial centroid distribution"
     means = [np.median(data)]*centroid_count
     if args.verbose > 1:
         print "Means initialized at:"

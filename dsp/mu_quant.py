@@ -16,8 +16,6 @@ parser.add_argument("-m", "--mu", dest="mu", action="store", default=0, type=int
 parser.add_argument("-l", "--linear", dest="linear", action="store_true", help="linear quanitzation")
 parser.add_argument("-am", "--adaptive_mu", dest="adaptive_mu", action="store", default=0, type=int, help="adaptive mu quanitzation, enter sample size for adaptive range")
 
-
-
 try:
     args = parser.parse_args()
 except SystemExit:
@@ -30,6 +28,11 @@ bit_range = 2**args.bits
 min_val = min(data)
 max_val =  max(data)
 
+def apply_linear(data):
+    base = (2**16)/(2**args.bits)
+    out = [int(x/base)*base for x in data]
+    return out
+
 if args.verbose:
     print "File has a sample rate of " + `sr` + " samples per second"
     print "File has " + `len(data)` + " values, " + `len(data)/float(sr)` + " seconds"
@@ -40,44 +43,17 @@ if args.mu:
     if args.verbose:
         print "Quantizing using mu-law algorithm"
 
-    #mu-law = (Xmax/u) * (log(1+u(|x|/Xmax)))/(log(1+u)) * sin(x)
-    #indirect method
-    if abs(max_val) > abs(min_val):
-        Xmax = abs(max_val)
-    else:
-        Xmax = abs(min_val)
-    base = (max_val - min_val)/(args.bits) + 1
-    mu=args.mu    
-    lin_level_values = []
-    mu_level_values = []
-    for  x in (range((args.bits))):
-       lin_level_values.append(min_val + base*x)
-    lin_level_values.append(max_val+1)
-    mu_level_values.append(min_val)  
-    for i in range(1, len(lin_level_values)-1): 
-       if lin_level_values[i] != 0:
-           mu_level_values.append(int((abs(lin_level_values[i])/lin_level_values[i])*(Xmax/mu)*(10**((math.log((1+mu), 10)*abs(lin_level_values[i]))/(Xmax)) - 1)))
-       else:
-           print "lin == 0"
-           mu_level_values.append(0)
-    mu_level_values.append(max_val+1)
-    if args.verbose:
-        print 'Linear levels:'
-        print lin_level_values    
-        print 'Inverse m-law levels:'
-        print mu_level_values
-    out = []
-    for d in data:
-         
-        for i in range(len(mu_level_values)-1):
-            if mu_level_values[i]<= d < mu_level_values[i+1]:
-               out.append(mu_level_values[i])  
-    if args.verbose:
-        print "Quant levels used"
-        print sorted(set(out))
-    wavfile.write("mu_quantized_%sbit_%imu_"%(args.bits, mu) + args.filename, sr, np.asarray(out).astype("int16"))
-
-
+    Xmax = 2**15
+    u = args.mu
+    data = [ x/float(Xmax) if x !=0 else .01 for x in data]
+    d = [math.log(1+u*(abs(x)))/(math.log(1+u))*(x/float(abs(x))) for x in data]
+    d = [Xmax*x for x in d]
+    mu_q = apply_linear(d)
+    mu_q = [ x/float(Xmax) for x in mu_q ]
+    mu_q = [ x if x !=0 else .01 for x in mu_q]
+    out = [(1/float(u))*((1+u)**float(abs(x))-1)*(x/float(abs(x))) for x in mu_q]
+    out = [Xmax*x for x in out]
+    wavfile.write("mu_quantized_%sbit_%imu_"%(args.bits, u) + args.filename, sr, np.asarray(out).astype("int16"))
 
 if args.adaptive_mu:
     if args.verbose:
@@ -97,13 +73,12 @@ if args.adaptive_mu:
        lin_level_values.append(min_val + base*x)
     lin_level_values.append(max_val+1)
 
-
     #if mean is closer to zero, mu --> 255
     #if mean is closer to Xmax, mu --> 0
     lookup = []
     if args.verbose:
         print 'Linear levels:'
-        print lin_level_values    
+        print lin_level_values
     out = []
     for d in range(0, len(data)-ar, ar) :
         mu_mean = abs(np.mean(data[d:(d+ar)]))
@@ -115,42 +90,27 @@ if args.adaptive_mu:
         if args.verbose:
             print 'mean', mu_mean, 'mu', mu
 
-        mu_level_values.append(min_val)  
-        for i in range(1, len(lin_level_values)-1): 
+        mu_level_values.append(min_val)
+        for i in range(1, len(lin_level_values)-1):
             if lin_level_values[i] != 0:
                 mu_level_values.append(int((abs(lin_level_values[i])/lin_level_values[i])*(Xmax/mu)*(10**((math.log((1+mu), 10)*abs(lin_level_values[i]))/(Xmax)) - 1)))
             else:
                 print "lin == 0"
                 mu_level_values.append(0)
         mu_level_values.append(max_val+1)
-        for x in range(ar): 
+        for x in range(ar):
             for i in range(len(mu_level_values)-1):
                 if mu_level_values[i]<= data[d+x] < mu_level_values[i+1]:
-                    out.append(mu_level_values[i])  
+                    out.append(mu_level_values[i])
         if args.verbose:
             print mu_level_values
         mu_level_values = []
     wavfile.write("adaptive_mu_quantized_%sbit_%isamples_"%(args.bits, args.adaptive_mu) + args.filename, sr, np.asarray(out).astype("int16"))
 
 
-
 if args.linear:
+    out = apply_linear(data)
 
-    base = (max_val-min_val)/(args.bits)+1 
-    lin_level_values = []
-    out = []
-    for x in (range(args.bits+1)):
-       lin_level_values.append(min_val + base*x)
-
-    if args.verbose:
-       print "linear levels:"
-       print  lin_level_values
-
-    for d in data: 
-       for x in range(len(lin_level_values)-1):
-           if lin_level_values[x] <= d < lin_level_values[x+1]:
-               out.append(lin_level_values[x]) 
-      
     if args.verbose:
        print 'Used values:'
        print  sorted(set(out))
@@ -158,4 +118,4 @@ if args.linear:
     wavfile.write("linear_quantized_%ibits_" %args.bits + args.filename, sr, np.asarray(out).astype("int16"))
 ############
 print "output length", len(out)
-print "Processing complete for " + args.filename 
+print "Processing complete for " + args.filename

@@ -44,14 +44,14 @@ for f in args.quantized:
         pprint(stats[f])
 
 key_groups = {}
-types = ["metropolishastings", "median", "rejection", "uniform", "zeroes", "weighted"]
+types = ["metropolishastings", "vecl", "linear", "mu", "median", "rejection", "uniform", "zeroes", "sculpters"]
+color = ["r-","b-","g-","c-","y-","m-","k-","r:","b:"]
 for i in types:
     key_groups[i] = []
     [key_groups[i].append(name) if i in name else 0 for name in stats.keys()]
-print key_groups
 legend_text = []
 handles = []
-for k in key_groups.keys():
+for n,k in enumerate(key_groups.keys()):
     type_mse = []
     type_rmse = []
     type_snr = []
@@ -60,9 +60,16 @@ for k in key_groups.keys():
             type_mse.append(stats[fname]["Mean Square Error"]) if "_" + str(i) + "bit" in fname else 0
             type_rmse.append(stats[fname]["Root Mean Square Error"]) if "_" + str(i) + "bit" in fname else 0
             type_snr.append(stats[fname]["Signal to Noise Ratio"]) if "_" + str(i) + "bit" in fname else 0
-    h, = plot.plot(type_mse)
+            print fname
+    h, = plot.plot(range(2,14,2), type_rmse, color[n])
     handles.append(h)
-    legend_text.append(k.title(), loc=2)
-print legend_text
-plot.legend(handles, legend_text)
+    legend_text.append(k.title())
+plot.title("Normalized Root Mean Squared Error")
+plot.ylabel("NRMSE")
+plot.xlabel("Number of bits (B)")
+
+#plot.title("Signal To Noise Ratio")
+#plot.ylabel("SNR (dB)")
+#plot.xlabel("Number of bits (B)")
+plot.legend(handles, legend_text, loc=1)
 plot.show()

@@ -11,7 +11,6 @@ import math
 import pylab
 parser = argparse.ArgumentParser(description="Apply vector quantization using k-means clustering to a linearly encoded WAV file")
 
-
 parser.add_argument("-o", "--original", dest="source", help="Original wav file")
 parser.add_argument("-b", "--bits", dest="bits", action="store", type=int, default=4, help="Integer number of bits used in quantized output, should be same for all files")
 
@@ -56,6 +55,6 @@ if args.v:
 
 pylab.legend(loc=3, ncol=2, mode="expand", borderaxespad=0) # bbox_transform=pylab.gcf().transFigure )
 
-pylab.savefig("%s.png" %args.source[:-4]) 
+pylab.savefig("%s.png" %args.source[:-4])
 pylab.show()
 
