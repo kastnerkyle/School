@@ -8,10 +8,8 @@ import numpy as np
 import sys
 import random
 import argparse
-import operator
 from multiprocessing import Pool, cpu_count
 from collections import Counter
-from functools import wraps
 
 parser = argparse.ArgumentParser(description="Apply vector quantization using k-means clustering to a linearly encoded WAV file")
 parser.add_argument(dest="filename", help="WAV file to be processed")
