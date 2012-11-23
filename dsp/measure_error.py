@@ -34,7 +34,7 @@ for f in args.quantized:
 
     mse = sum([(o-q)**2 for o,q in zip(orig,quant)])/len(orig)
     rmse = np.sqrt(mse)
-    snr = 10*np.log(np.var(orig)/np.var(quant))
+    snr = 10*np.log10(np.var(orig)/np.var(quant))
 
     stats[f]["Mean Square Error"] = mse
     stats[f]["Root Mean Square Error"] = rmse
@@ -44,7 +44,8 @@ for f in args.quantized:
         pprint(stats[f])
 
 key_groups = {}
-types = ["metropolishastings", "vecl", "linear", "mu", "median", "rejection", "uniform", "zeroes", "sculpters"]
+types = ["metropolishastings", "vecl", "linear", "mu", "median", "rejection", "forgy", "zeroes", "sculptors"]
+#types = ["metropolishastings", "vecl", "mu", "median", "rejection", "forgy", "zeroes", "sculptors"]
 color = ["r-","b-","g-","c-","y-","m-","k-","r:","b:"]
 for i in types:
     key_groups[i] = []
@@ -60,16 +61,20 @@ for n,k in enumerate(key_groups.keys()):
             type_mse.append(stats[fname]["Mean Square Error"]) if "_" + str(i) + "bit" in fname else 0
             type_rmse.append(stats[fname]["Root Mean Square Error"]) if "_" + str(i) + "bit" in fname else 0
             type_snr.append(stats[fname]["Signal to Noise Ratio"]) if "_" + str(i) + "bit" in fname else 0
-            print fname
-    h, = plot.plot(range(2,14,2), type_rmse, color[n])
+    try:
+        #h, = plot.plot(range(2,14,2), type_nrmse, color[n])
+        h, = plot.plot(range(2,14,2), type_snr, color[n])
+    except ValueError:
+        print "Unable to generate plot - make sure that the first argument passed is the original .WAV file!"
+        sys.exit()
     handles.append(h)
     legend_text.append(k.title())
-plot.title("Normalized Root Mean Squared Error")
-plot.ylabel("NRMSE")
-plot.xlabel("Number of bits (B)")
-
-#plot.title("Signal To Noise Ratio")
-#plot.ylabel("SNR (dB)")
+#plot.title("Normalized Root Mean Squared Error")
+#plot.ylabel("NRMSE")
 #plot.xlabel("Number of bits (B)")
+
+plot.title("Signal To Noise Ratio")
+plot.ylabel("SNR (dB)")
+plot.xlabel("Number of bits (B)")
 plot.legend(handles, legend_text, loc=1)
 plot.show()

@@ -22,7 +22,7 @@ group = parser.add_mutually_exclusive_group()
 group.add_argument("-z", "--zeroes", dest="zeroes", action="store_true", help="Use all zeroes for centroid initialization ")
 group.add_argument("-m", "--median", dest="median", action="store_true", help="Use data median for centroid initialization ")
 group.add_argument("-l", "--linear", dest="linear", action="store_true", help="Use linear assignment for centroid initialization ")
-group.add_argument("-u", "--uniform", dest="uniform", action="store_true", help="Use uniform random algorithm for centroid initialization ")
+group.add_argument("-f", "--forgy", dest="forgy", action="store_true", help="Use forgy random algorithm for centroid initialization ")
 group.add_argument("-r", "--rejection", dest="rejection", action="store_true", help="Use rejection sampling for centroid initialization ")
 group.add_argument("-c", "--sculpters", dest="sculpters", action="store_true", help="Use weighted line formula for centroid initialization ")
 group.add_argument("-p", "--metropolishastings", dest="metropolishastings", action="store_true", help="Use metropolis hastings algorithm for centroid initialization ")
@@ -41,10 +41,10 @@ if args.verbose > 0:
     print "File has " + `len(data)` + " values, " + `len(data)/float(sr)` + " seconds"
     print "Vector quantization will use " + `centroid_count` + " centroids for k-means calculations"
 
-if args.uniform:
-    centroid_type = "uniform"
+if args.forgy:
+    centroid_type = "forgy"
     if args.verbose > 0:
-        print "Using uniform random algorithm for initial centroid distribution"
+        print "Using forgy random algorithm for initial centroid distribution"
     means = [random.choice(data) for i in range(centroid_count)]
     if args.verbose > 1:
         print "Means initialized at:"
