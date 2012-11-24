@@ -7,6 +7,7 @@ import argparse
 import sys
 import matplotlib.pyplot as plot
 from numpy.lib.stride_tricks import as_strided as ast
+import copy
 
 parser = argparse.ArgumentParser(description="Apply ")
 parser.add_argument(dest="filename", help="WAV file to be processed")
@@ -52,16 +53,25 @@ def run_specgram():
 
 def run_spectral_correlation():
     sr, data = wavfile.read(args.filename)
-    data = np.asarray(data, dtype=np.int16)
-    vec_len, = data.shape
-    spacing = data.itemsize
-    window = args.fft
-    #Need 67% overlap for SCF using Hann window according to Cyclic Spectral Analysis in Practice - Jerome Antoni
-    increment = int(window*.33)
-    #Add extra zeros for tail end in order to avoid junk data - must keep dtype as int16 - otherwise weird broadcasting rules will take over...
-    data = np.hstack((data, np.zeros(window, dtype=np.int16)))
-    overlapped = ast(data, shape=(vec_len/(increment),window), strides=(increment*spacing, spacing))
-    fft = np.fft.fftn(overlapped, s=(window,), axes=(1,))
+    data = np.asarray(data, dtype=np.complex64)
+    alpha = .5
+
+    def alpha_run(data, alpha):
+        vec_len, = data.shape
+        spacing = data.itemsize
+        window = args.fft
+        #Need 67% overlap for SCF using Hann window according to Cyclic Spectral Analysis in Practice - Jerome Antoni
+        increment = int(window*.33)
+        #Add extra zeros for tail end in order to avoid junk data - must keep dtype as int16 - otherwise weird broadcasting rules will take over...
+        #http://www.utc.fr/~antoni/programm.htm
+        data = np.hstack((data, np.zeros(window, dtype=np.complex64)))
+        t = np.arange(0,data.shape[0])
+        plus_alpha = np.asarray([np.exp(1j*np.pi*alpha*n) for n in t], dtype=np.complex64)
+        minus_alpha = np.asarray([np.exp(-1j*np.pi*alpha*n) for n in t], dtype=np.complex64)
+        return ast(data, shape=(vec_len/increment,window), strides=(increment*spacing, spacing))
+
+    overlapped_data = alpha_run(data, alpha)
+    fft = np.fft.fftn(overlapped_data, s=(args.fft,), axes=(1,))
     plot.imshow(abs(fft))
     plot.show()
 try:
