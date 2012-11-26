@@ -44,7 +44,7 @@ for f in args.quantized:
         pprint(stats[f])
 
 key_groups = {}
-types = ["metropolishastings", "median", "rejection", "uniform", "zeroes", "weighted"]
+types = ["adaptive_mu", "constant_mu", "linear", "metropolishastings", "median", "rejection", "uniform", "zeroes", "weighted"]
 for i in types:
     key_groups[i] = []
     [key_groups[i].append(name) if i in name else 0 for name in stats.keys()]
@@ -62,7 +62,10 @@ for k in key_groups.keys():
             type_snr.append(stats[fname]["Signal to Noise Ratio"]) if "_" + str(i) + "bit" in fname else 0
     h, = plot.plot(type_mse)
     handles.append(h)
-    legend_text.append(k.title(), loc=2)
+    legend_text.append(k.title())
+    
 print legend_text
-plot.legend(handles, legend_text)
+plot.legend(handles, legend_text, loc=1, ncol=3, mode='expand', borderaxespad=0)
+plot.xlabel('Number of bits')
+plot.ylabel('Mean squared error')
 plot.show()

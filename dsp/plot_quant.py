@@ -24,6 +24,8 @@ parser.add_argument("-a", "--adapive-mu", dest="a",  help="Adaptive Mu quantized
 parser.add_argument("-l", "--linear",  dest="l", help="Linear quantized wav file")
 parser.add_argument("-v", "--vector", dest="v", help="Vector quantized wav file")
 
+parser.add_argument("-t", "--text", dest="t", default="", help="Text to add to title")
+
 pylab.xlabel("t")
 pylab.ylabel("V")
 
@@ -36,7 +38,7 @@ except SystemExit:
 
 s = args.start
 e = args.end
-pylab.title("%s at %i bits, %i:%i" %(args.source, args.bits, s, e))
+pylab.title("%s at %i bits, %i:%i, %s" %(args.source, args.bits, s, e, args.t))
 sr, source = wavfile.read(args.source)
 pylab.plot(source[s:e], 'k', label="source")
 
@@ -54,7 +56,7 @@ if args.v:
     sr4, vec = wavfile.read(args.v)
     pylab.plot(vec[s:e], 'r', label="vector")
 
-pylab.legend(loc=3, ncol=2, mode="expand", borderaxespad=0) # bbox_transform=pylab.gcf().transFigure )
+pylab.legend(loc=1, ncol=4, mode="expand", borderaxespad=0) # bbox_transform=pylab.gcf().transFigure )
 
 pylab.savefig("%s.png" %args.source[:-4]) 
 pylab.show()

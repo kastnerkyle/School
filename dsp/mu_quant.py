@@ -14,7 +14,7 @@ parser.add_argument("-b", "--bits", dest="bits", action="store", default=4, type
 parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="Show verbose output")
 parser.add_argument("-m", "--mu", dest="mu", action="store", default=0, type=int,  help="mu-law quantization, enter mu value")
 parser.add_argument("-l", "--linear", dest="linear", action="store_true", help="linear quanitzation")
-parser.add_argument("-am", "--adaptive_mu", dest="adaptive_mu", action="store", default=0, type=int, help="adaptive mu quanitzation, enter sample size for adaptive range")
+parser.add_argument("-a", "--adaptive_mu", dest="adaptive_mu", action="store", default=0, type=int, help="adaptive mu quanitzation, enter sample size for adaptive range")
 
 
 
@@ -46,11 +46,11 @@ if args.mu:
         Xmax = abs(max_val)
     else:
         Xmax = abs(min_val)
-    base = (max_val - min_val)/(args.bits) + 1
+    base = (max_val - min_val)/(bit_range) + 1
     mu=args.mu    
     lin_level_values = []
     mu_level_values = []
-    for  x in (range((args.bits))):
+    for  x in (range((bit_range))):
        lin_level_values.append(min_val + base*x)
     lin_level_values.append(max_val+1)
     mu_level_values.append(min_val)  
@@ -75,7 +75,7 @@ if args.mu:
     if args.verbose:
         print "Quant levels used"
         print sorted(set(out))
-    wavfile.write("mu_quantized_%sbit_%imu_"%(args.bits, mu) + args.filename, sr, np.asarray(out).astype("int16"))
+    wavfile.write("constant_mu_quantized_%sbit_%imu_"%(args.bits, mu) + args.filename, sr, np.asarray(out).astype("int16"))
 
 
 
@@ -89,11 +89,11 @@ if args.adaptive_mu:
         Xmax = abs(max_val)
     else:
         Xmax = abs(min_val)
-    base = (max_val - min_val)/(args.bits) + 1
+    base = (max_val - min_val)/(bit_range) + 1
     lin_level_values = []
     mu_level_values = []
     ar = args.adaptive_mu
-    for  x in (range((args.bits))):
+    for  x in (range((bit_range))):
        lin_level_values.append(min_val + base*x)
     lin_level_values.append(max_val+1)
 
@@ -111,9 +111,9 @@ if args.adaptive_mu:
         for x in range(ar):
             arsum = arsum + abs(data[d+x])
         mu_mean = arsum/ar
-        mu =((1- (float(mu_mean)/float(Xmax)) )*254)
+        mu =int((1- (float(mu_mean)/float(Xmax)) )*254)
         if args.verbose:
-            print 'mean', mu_mean, 'mu', mu
+            print d, 'mean', mu_mean, 'mu', mu
 
         mu_level_values.append(min_val)  
         for i in range(1, len(lin_level_values)-1): 
@@ -136,10 +136,10 @@ if args.adaptive_mu:
 
 if args.linear:
 
-    base = (max_val-min_val)/(args.bits)+1 
+    base = (max_val-min_val)/(bit_range)+1 
     lin_level_values = []
     out = []
-    for x in (range(args.bits+1)):
+    for x in (range(bit_range+1)):
        lin_level_values.append(min_val + base*x)
 
     if args.verbose:
