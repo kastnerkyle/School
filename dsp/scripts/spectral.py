@@ -6,6 +6,7 @@ import numpy as np
 import argparse
 import sys
 import matplotlib.pyplot as plot
+from matplotlib import cm
 from numpy.lib.stride_tricks import as_strided as ast
 import copy
 from mpl_toolkits.mplot3d import Axes3D
@@ -83,7 +84,7 @@ def run_cyclic_coherence():
     data = np.asarray(data[0:1000], dtype=np.complex64)
     coh = None
     start_alpha = 1
-    stop_alpha = 800
+    stop_alpha = 500
     step_alpha = 1
     alphas = range(start_alpha, stop_alpha, step_alpha)
     alphas = [ 1./x if x !=0 else None for x in alphas ]
@@ -110,12 +111,14 @@ def run_cyclic_coherence():
         if coh == None:
             coh = np.zeros((xaxis.shape[0],args.fft), dtype=np.complex64)
         coh[n,:] = res
-    X, Y = np.meshgrid(xaxis, yaxis)
-    Z = coh
-    #f = plot.figure()
-    #ax = Axes3D(f)
-    #ax.plot(X, Y, Z)
-    plot.imshow(abs(Z))
+
+    X, Y = np.meshgrid(xaxis, yaxis[:args.fft/2])
+    Z = abs(coh.T[:args.fft/2,:]) #Transpose needed for plotting to work...
+    f = plot.figure()
+    ax = Axes3D(f)
+    ax.plot_surface(X, Y, Z, cmap=cm.jet)
+    plot.figure()
+    plot.imshow(Z)
     plot.show()
 try:
     args = parser.parse_args()
