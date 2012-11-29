@@ -19,10 +19,15 @@ parser.add_argument("-s", "--start", dest="start", action="store", type=int, def
 
 parser.add_argument("-e", "--end", dest="end", action="store", type=int, default=500, help="Integer number to end plot")
 
-parser.add_argument("-m", "--mu", dest="mu",  action="store_true", help="Mu quantizedd wav file")
-parser.add_argument("-a", "--adaptive-mu", dest="a",  action="store_true", help="Adaptive Mu quantized wav file")
-parser.add_argument("-l", "--linear",  dest="l", action="store_true", help="Linear quantized wav file")
-parser.add_argument("-v", "--vector", dest="v", action="store_true", help="Vector quantized wav file")
+parser.add_argument("-m", "--mu", dest="mu",  help="Mu quantizedd wav file")
+parser.add_argument("-a", "--adapive-mu", dest="a",  help="Adaptive Mu quantized wav file")
+parser.add_argument("-l", "--linear",  dest="l", help="Linear quantized wav file")
+parser.add_argument("-v", "--vector", dest="v", help="Vector quantized wav file")
+
+parser.add_argument("-t", "--text", dest="t", default="", help="Text to add to title")
+
+pylab.xlabel("t")
+pylab.ylabel("V")
 
 pylab.xlabel("Time (samples)")
 pylab.ylabel("Amplitude")
@@ -34,9 +39,9 @@ except SystemExit:
 
 s = args.start
 e = args.end
-pylab.title("%s at %i bits, %i:%i" %(args.original_file, args.bits, s, e))
-sr, orig = wavfile.read(args.original_file)
-pylab.plot(orig[s:e], 'k', label="source")
+pylab.title("%s at %i bits, %i:%i, %s" %(args.source, args.bits, s, e, args.t))
+sr, source = wavfile.read(args.source)
+pylab.plot(source[s:e], 'k', label="source")
 
 sr1, quant = wavfile.read(args.quantized_file)
 if args.mu:
@@ -48,7 +53,8 @@ if args.l:
 if args.v:
     pylab.plot(quant[s:e], 'r', label="vector")
 
-pylab.legend(loc=3, ncol=2, mode="expand", borderaxespad=0) # bbox_transform=pylab.gcf().transFigure )
-#pylab.savefig("%s.png" %args.[:-4])
+pylab.legend(loc=1, ncol=4, mode="expand", borderaxespad=0) # bbox_transform=pylab.gcf().transFigure )
+
+pylab.savefig("%s.png" %args.source[:-4]) 
 pylab.show()
 

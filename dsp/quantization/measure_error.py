@@ -69,6 +69,7 @@ for n,k in enumerate(key_groups.keys()):
         sys.exit()
     handles.append(h)
     legend_text.append(k.title())
+    
 #plot.title("Normalized Root Mean Squared Error")
 #plot.ylabel("NRMSE")
 #plot.xlabel("Number of bits (B)")
