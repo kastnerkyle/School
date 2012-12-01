@@ -10,6 +10,7 @@ from matplotlib import cm
 from numpy.lib.stride_tricks import as_strided as ast
 import copy
 from mpl_toolkits.mplot3d import Axes3D
+import scipy.stats as st
 
 parser = argparse.ArgumentParser(description="Apply ")
 parser.add_argument(dest="filename", help="WAV file to be processed")
@@ -77,9 +78,11 @@ def alpha_run(d1, d2, alpha, beta):
     Xconj = np.conjugate(np.fft.fftn(overlap(x)*window, s=(args.fft,), axes=(1,)))
     Y = np.fft.fftn(overlap(y)*window, s=(args.fft,), axes=(1,))
     normalizing_factor = Y.shape[0]*np.linalg.norm(window)**2
-    return np.sum(Xconj*Y, axis=0, dtype=np.complex64)/float(normalizing_factor)
+    return (np.sum(Xconj*Y, axis=0, dtype=np.complex64)/float(normalizing_factor), window, increment)
 
 def run_cyclic_coherence():
+    significance = .01
+    P = significance
     sr, data = wavfile.read(args.filename)
     data = np.asarray(data[0:1000], dtype=np.complex64)
     coh = None
@@ -103,23 +106,66 @@ def run_cyclic_coherence():
         minus_alpha = np.asarray([np.exp(-1j*np.pi*alpha*beta*k) for k in t], dtype=np.complex64)
         y = data*minus_alpha
         x = data*plus_alpha
-        xx = alpha_run(x, x, 0, beta)
-        yx = alpha_run(y, x, 0, beta)
-        #xy = alpha_run(x, y, alpha, beta)
-        yy = alpha_run(y, y, 0, beta)
+        #Window and delta are the same for x and y for every alpha, so we can overwrte each time without issue
+        xx,window,delta = alpha_run(x, x, 0, beta)
+        yx,window,delta = alpha_run(y, x, 0, beta)
+        yy,window,delta = alpha_run(y, y, 0, beta)
         res = yx/np.sqrt(yy*xx)
         if coh == None:
             coh = np.zeros((xaxis.shape[0],args.fft), dtype=np.complex64)
         coh[n,:] = res
 
+    def chi2inv(p, v):
+        return st.invgamma(v/2,scale=2).ppf(p)
+
+    acorr_window = np.correlate(window,window,"full")
+    #Number of windows is the same
+    K = xx.shape[0]
+    k_start = len(window) + delta
+    k_stop = min(len(acorr_window), (len(window))+delta*(K-1))
+    k_step = delta
+    k = np.arange(k_start, k_stop, k_step)
+    if len(k) > 1:
+        var_reduction = acorr_window[len(window)]**2/K + 2/K*(1-np.arange(len(k))/K)*(acorr_window[k_start:k_stop:k_step]**2)
+    else:
+        var_reduction = acorr_window[len(window)]**2/K
+
+    print chi2inv(1-P, 2)*(var_reduction/2.)
+    print chi2inv(1-P, 2)
     X, Y = np.meshgrid(xaxis, yaxis[:args.fft/2])
-    Z = abs(coh.T[:args.fft/2,:]) #Transpose needed for plotting to work...
+    Z = abs(coh.T[:args.fft/2,:]) #Transpose needed for plotting to work correctly...
     f = plot.figure()
     ax = Axes3D(f)
     ax.plot_surface(X, Y, Z, cmap=cm.jet)
+    xlocs, xlabels = plot.xticks()
+    ylocs, ylabels  = plot.yticks()
+    plot.xticks(xlocs, [1./x for x in xaxis][::len(xaxis)/len(xlocs)])
+    plot.yticks(ylocs, np.asarray(yaxis[::len(yaxis)/len(ylocs)])*(sr/(1000*float(args.fft))))
+    plot.title("Cyclic Coherence")
+    plot.xlabel("Cyclic Frequency(Hz)")
+    plot.ylabel("Spectral Frequency(kHz)")
+
     plot.figure()
-    plot.imshow(Z)
-    plot.show()
+    plot.imshow(Z, cmap=cm.jet)
+    plot.title("Cyclic Coherence Heatmap")
+    plot.xlabel("Cyclic Frequency(Hz)")
+    plot.ylabel("Spectral Frequency(kHz)")
+    plot.colorbar()
+
+    plot.figure()
+    Zmean = np.mean(Z, axis=0)
+    Zmin = np.amin(Z,0)
+    Zmax = np.amax(Z,0)
+    Zmed = np.median(Z, axis=0)
+    plot.plot(Zmax, label="Max")
+    plot.plot(Zmin, label="Min")
+    plot.plot(Zmean, label="Mean")
+    plot.plot(Zmed, label="Median")
+    plot.title("Cyclic Coherence vs. Cyclic Frequency")
+    plot.xlabel("Cyclic Frequency(Hz)")
+    plot.ylabel("Coherence")
+    plot.legend()
+
 try:
     args = parser.parse_args()
 except SystemExit:
