@@ -11,18 +11,18 @@ from numpy.lib.stride_tricks import as_strided as ast
 import copy
 from mpl_toolkits.mplot3d import Axes3D
 import scipy.stats as st
+import time
 
-parser = argparse.ArgumentParser(description="Apply ")
+parser = argparse.ArgumentParser(description="Apply spectral analysis techniques to input data")
 parser.add_argument(dest="filename", help="WAV file to be processed")
 parser.add_argument("-n", "--noplot", dest="noplot", action="store_true", help="WAV file to be processed")
 parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="Show verbose output, use -vv for highest verbosity")
 parser.add_argument("-s", "--specgram", dest="specgram", action="store_true", help="Show spectrogram of input wavefile")
 parser.add_argument("-c", "--coherence", dest="coherence", action="store_true", help="Plot cyclic coherence of input")
+parser.add_argument("-w", "--wigner", dest="wigner", action="store_true", help="Plot Wigner-Ville spectrum of input")
 parser.add_argument("-f", "--fft", type=int, dest="fft", action="store", default=1024, help="Optionally set FFT size, default is 1024")
 
-def run_specgram():
-    sr, data = wavfile.read(args.filename)
-    data = np.asarray(data, dtype=np.int16)
+def run_specgram(sr, data):
     vec_len, = data.shape
     fft_size = args.fft
     if args.verbose > 0:
@@ -80,11 +80,7 @@ def alpha_run(d1, d2, alpha, beta):
     normalizing_factor = Y.shape[0]*np.linalg.norm(window)**2
     return (np.sum(Xconj*Y, axis=0, dtype=np.complex64)/float(normalizing_factor), window, increment)
 
-def run_cyclic_coherence():
-    significance = .01
-    P = significance
-    sr, data = wavfile.read(args.filename)
-    data = np.asarray(data[0:1000], dtype=np.complex64)
+def run_cyclic_coherence(sr, data):
     coh = None
     start_alpha = 1
     stop_alpha = 500
@@ -94,7 +90,7 @@ def run_cyclic_coherence():
     alphas = filter(lambda x: x != None, alphas)
     #http://stackoverflow.com/questions/9152958/matplotlib-3d-plot-2d-format-for-input-data
     beta = .5
-    max_step = 1./data.shape[0]
+    #max_step = 1./data.shape[0]
     yaxis = np.arange(0,args.fft)
     xaxis = alphas
     xaxis = np.asarray(xaxis)
@@ -115,23 +111,25 @@ def run_cyclic_coherence():
             coh = np.zeros((xaxis.shape[0],args.fft), dtype=np.complex64)
         coh[n,:] = res
 
-    def chi2inv(p, v):
-        return st.invgamma(v/2,scale=2).ppf(p)
-
-    acorr_window = np.correlate(window,window,"full")
+    #Can't get this working right now...
+    #significance = .01
+    #P = significance
+    #acorr_window = np.correlate(window,window,"full")
     #Number of windows is the same
-    K = xx.shape[0]
-    k_start = len(window) + delta
-    k_stop = min(len(acorr_window), (len(window))+delta*(K-1))
-    k_step = delta
-    k = np.arange(k_start, k_stop, k_step)
-    if len(k) > 1:
-        var_reduction = acorr_window[len(window)]**2/K + 2/K*(1-np.arange(len(k))/K)*(acorr_window[k_start:k_stop:k_step]**2)
-    else:
-        var_reduction = acorr_window[len(window)]**2/K
+    #K = xx.shape[0]
+    #k_start = len(window) + delta
+    #k_stop = min(len(acorr_window), (len(window))+delta*(K-1))
+    #k_step = delta
+    #k = np.arange(k_start, k_stop, k_step)
+    #if len(k) > 1:
+    #    var_reduction = (acorr_window[len(window)]**2)/float(K) + 2./(K*(1-np.arange(len(k))/float(K))*(acorr_window[k_start:k_stop:k_step]**2))
+    #else:
+    #    var_reduction = (acorr_window[len(window)]**2)/float(K)
+    #def chi2inv(p, v):
+    #    return st.invgamma(v/2,scale=2).ppf(p)
+    #print chi2inv(1-P, 2)*(var_reduction/2.)
+    #print chi2inv(1-P, 2)
 
-    print chi2inv(1-P, 2)*(var_reduction/2.)
-    print chi2inv(1-P, 2)
     X, Y = np.meshgrid(xaxis, yaxis[:args.fft/2])
     Z = abs(coh.T[:args.fft/2,:]) #Transpose needed for plotting to work correctly...
     f = plot.figure()
@@ -165,6 +163,32 @@ def run_cyclic_coherence():
     plot.xlabel("Cyclic Frequency(Hz)")
     plot.ylabel("Coherence")
     plot.legend()
+    plot.show()
+
+def run_wigner_ville(sr, data):
+    fftsizes = [2**i for i in range(1,17)]
+    nfft = filter(lambda x: x > 2*data.shape[0], fftsizes)[0]
+    data = np.hstack((np.asarray(data, dtype=np.int16), np.zeros(nfft-data.shape[0])))
+    cdata = np.conjugate(data)
+    if args.verbose > 0:
+        print `args.filename` + " has shape of " + `data.shape`
+        print `args.filename` + " has sample rate of " + `sr`
+    max_tau = len(data)-1
+    wdata = np.zeros((nfft, len(data)), dtype=np.complex64)
+    for n in range(max_tau):
+        ix = range(max([-n, -max_tau+n]),min([n+1,max_tau-n+1]))
+        iy = [t + nfft*(1 if t < 0 else 0)  for t in ix]
+        if len(ix) == 0:
+            ix = iy = [0]
+        for v,i in enumerate(iy):
+            wdata[i,n] = data[n+ix[v]]*cdata[n-ix[v]]
+
+    wdata = np.fft.fftshift(np.real(np.fft.fft(wdata)),axes=0)
+    plot.contourf(wdata[(nfft/4+1):-(nfft/4+1),:wdata.shape[1]/2], 255, cmap=cm.gist_yarg)
+    #plot.xticks(xlocs, [v*freqperbin for v in range(nfft)])
+    plot.xlabel("Frequency")
+    plot.ylabel("Time in samples")
+    plot.show()
 
 try:
     args = parser.parse_args()
@@ -172,7 +196,11 @@ except SystemExit:
     parser.print_help()
     sys.exit()
 
+sr, data = wavfile.read(args.filename)
+data = np.asarray(data, dtype=np.complex64)[5000:6000]
 if args.specgram:
-    run_specgram()
+    run_specgram(sr, data)
 elif args.coherence:
-    run_cyclic_coherence()
+    run_cyclic_coherence(sr, data)
+elif args.wigner:
+    run_wigner_ville(sr, data)
