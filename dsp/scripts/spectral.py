@@ -2,6 +2,7 @@
 #Attempt to apply spectral correlation function to data and plot 3D
 #http://www.johnvinyard.com/blog/?p=268
 import scipy.io.wavfile as wavfile
+from scipy.io import loadmat
 import numpy as np
 import argparse
 import sys
@@ -12,6 +13,7 @@ import copy
 from mpl_toolkits.mplot3d import Axes3D
 import scipy.stats as st
 import time
+import pandas
 
 parser = argparse.ArgumentParser(description="Apply spectral analysis techniques to input data")
 parser.add_argument(dest="filename", help="WAV file to be processed")
@@ -82,8 +84,8 @@ def alpha_run(d1, d2, alpha, beta):
 
 def run_cyclic_coherence(sr, data):
     coh = None
-    start_alpha = 1
-    stop_alpha = 500
+    start_alpha = 1500
+    stop_alpha = 4000
     step_alpha = 1
     alphas = range(start_alpha, stop_alpha, step_alpha)
     alphas = [ 1./x if x !=0 else None for x in alphas ]
@@ -138,7 +140,8 @@ def run_cyclic_coherence(sr, data):
     xlocs, xlabels = plot.xticks()
     ylocs, ylabels  = plot.yticks()
     plot.xticks(xlocs, [1./x for x in xaxis][::len(xaxis)/len(xlocs)])
-    plot.yticks(ylocs, np.asarray(yaxis[::len(yaxis)/len(ylocs)])*(sr/(1000*float(args.fft))))
+    if sr > 0:
+        plot.yticks(ylocs, np.asarray(yaxis[::len(yaxis)/len(ylocs)])*(sr/(1000*float(args.fft))))
     plot.title("Cyclic Coherence")
     plot.xlabel("Cyclic Frequency(Hz)")
     plot.ylabel("Spectral Frequency(kHz)")
@@ -184,8 +187,11 @@ def run_wigner_ville(sr, data):
             wdata[i,n] = data[n+ix[v]]*cdata[n-ix[v]]
 
     wdata = np.fft.fftshift(np.real(np.fft.fft(wdata)),axes=0)
-    plot.contourf(wdata[(nfft/4+1):-(nfft/4+1),:wdata.shape[1]/2], 255, cmap=cm.gist_yarg)
-    #plot.xticks(xlocs, [v*freqperbin for v in range(nfft)])
+    P = .005
+    def chi2inv(p, v):
+        return st.invgamma(v/2,scale=2).ppf(p)
+    significance = np.mean(np.mean(wdata))*chi2inv(1-P, 2)
+    plot.contourf(wdata[(nfft/4+1):-(nfft/4+1),:wdata.shape[1]/2], 255, vmin=significance, vmax=np.max(np.max(wdata)), cmap=cm.jet)
     plot.xlabel("Frequency")
     plot.ylabel("Time in samples")
     plot.show()
@@ -196,8 +202,28 @@ except SystemExit:
     parser.print_help()
     sys.exit()
 
-sr, data = wavfile.read(args.filename)
-data = np.asarray(data, dtype=np.complex64)[5000:6000]
+if args.filename[-4:] == ".mat":
+    mat = loadmat(args.filename)
+    data = mat["x"].flatten()
+    data = np.asarray(data, dtype=np.complex64)[5000:6000]
+    sr = -1
+elif args.filename[-4:] == ".wav":
+    sr, data = wavfile.read(args.filename)
+    data = np.asarray(data, dtype=np.complex64)[5000:6000]
+elif args.filename[-4:] == ".txt":
+    df = pandas.read_csv(args.filename)
+    rm = pandas.rolling_mean(df.Close, len(df.Close)/10000)
+    vstd = pandas.rolling_std(df.Close, len(df.Close)/10000)
+    vmed = pandas.rolling_median(df.Close, len(df.Close)/10000)
+    df['rm'] = rm
+    df['vstd'] = vstd
+    df['vmed'] = vmed
+    df.ix[abs(df.Close - df.rm) > 5*df.vstd, "Close"] = df.ix[abs(df.Close - df.rm) > 5*df.vstd, "vmed"]
+    data = np.asarray(df["Close"])
+    data = data[::100]
+    data = data[:6000]
+    sr = -1
+
 if args.specgram:
     run_specgram(sr, data)
 elif args.coherence:
