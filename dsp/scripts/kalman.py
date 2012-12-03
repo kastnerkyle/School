@@ -52,7 +52,7 @@ def kfilt(y, source_scale, source_sigma, meas_sigma):
     return k
 
 def basic_kalman(data):
-    source_sigma = abs(np.mean(data)/np.median(data))
+    source_sigma = .1
     source_sigma = 1./source_sigma if source_sigma >= 1 else source_sigma
     source_scale = np.sqrt(1-source_sigma**2)
     meas_sigma = source_sigma #measurement error?
@@ -85,7 +85,7 @@ elif args.filename[-4:] == ".txt":
     df['vmed'] = vmed
     df.ix[abs(df.Close - df.rm) > 5*df.vstd, "Close"] = df.ix[abs(df.Close - df.rm) > 5*df.vstd, "vmed"]
     data = np.asarray(df["Close"])
-    #data = data[::100]
+    data = data[::100]
     #data = data[:6000]
     sr = -1
 
