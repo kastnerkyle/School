@@ -39,7 +39,7 @@ def update_sigma (pred_sigma, meas_sigma):
     r = (1./(pred_sigma**2))+(1./(meas_sigma**2))
     return 1./np.sqrt(r)
 
-def kfilt(y, source_scale, source_sigma, meas_sigma):
+def lkfilt(y, source_scale, source_sigma, meas_sigma):
     last_mean = 0
     last_sigma = source_sigma
     k = range(len(y))
@@ -53,10 +53,9 @@ def kfilt(y, source_scale, source_sigma, meas_sigma):
 
 def basic_kalman(data):
     source_sigma = .1
-    source_sigma = 1./source_sigma if source_sigma >= 1 else source_sigma
     source_scale = np.sqrt(1-source_sigma**2)
     meas_sigma = source_sigma #measurement error?
-    k = kfilt(data, source_scale, source_sigma, meas_sigma)
+    k = lkfilt(data, source_scale, source_sigma, meas_sigma)
     plot.plot(k)
     plot.plot(data)
     plot.show()
@@ -85,8 +84,7 @@ elif args.filename[-4:] == ".txt":
     df['vmed'] = vmed
     df.ix[abs(df.Close - df.rm) > 5*df.vstd, "Close"] = df.ix[abs(df.Close - df.rm) > 5*df.vstd, "vmed"]
     data = np.asarray(df["Close"])
-    data = data[::100]
-    #data = data[:6000]
+    data = data[::10000]
     sr = -1
 
 basic_kalman(data)

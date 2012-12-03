@@ -15,6 +15,24 @@ import scipy.stats as st
 import time
 import pandas
 
+class AlphasAction(argparse.Action):
+    def __call__(self, parser, args, values, option = None):
+        setattr(args, self.dest, map(int,values))
+        if len(args.alphas) < 3:
+            defaults = [1, 500, 1]
+            print "Wrong number of arguments, require 3 values, --alphas start stop step"
+            print "Using defaults " + `defaults`
+            setattr(args, self.dest, defaults)
+#
+class EndpointsAction(argparse.Action):
+    def __call__(self, parser, args, values, option = None):
+        setattr(args, self.dest, map(int,values))
+        if len(args.alphas) < 2:
+            defaults = [5000, 6000]
+            print "Wrong number of arguments, require 2 values, --endpoints start stop"
+            print "Using default endpoints of " + `args.endpoints`
+            setattr(args, self.dest, defaults)
+
 parser = argparse.ArgumentParser(description="Apply spectral analysis techniques to input data")
 parser.add_argument(dest="filename", help="WAV file to be processed")
 parser.add_argument("-n", "--noplot", dest="noplot", action="store_true", help="WAV file to be processed")
@@ -23,6 +41,8 @@ parser.add_argument("-s", "--specgram", dest="specgram", action="store_true", he
 parser.add_argument("-c", "--coherence", dest="coherence", action="store_true", help="Plot cyclic coherence of input")
 parser.add_argument("-w", "--wigner", dest="wigner", action="store_true", help="Plot Wigner-Ville spectrum of input")
 parser.add_argument("-f", "--fft", type=int, dest="fft", action="store", default=1024, help="Optionally set FFT size, default is 1024")
+parser.add_argument("-a", "--alphas", dest="alphas", default=[1,500,1], action=AlphasAction, nargs="*", help='Start, stop, and step values for alpha')
+parser.add_argument("-e", "--endpoints", dest="endpoints", default=[5000,6000], action=EndpointsAction, nargs="*", help='Start and stop endpoints for data')
 
 def run_specgram(sr, data):
     vec_len, = data.shape
@@ -84,9 +104,10 @@ def alpha_run(d1, d2, alpha, beta):
 
 def run_cyclic_coherence(sr, data):
     coh = None
-    start_alpha = 1500
-    stop_alpha = 4000
-    step_alpha = 1
+    start_alpha = args.alphas[0]
+    stop_alpha = args.alphas[1]
+    step_alpha = args.alphas[2]
+
     alphas = range(start_alpha, stop_alpha, step_alpha)
     alphas = [ 1./x if x !=0 else None for x in alphas ]
     alphas = filter(lambda x: x != None, alphas)
@@ -140,17 +161,17 @@ def run_cyclic_coherence(sr, data):
     xlocs, xlabels = plot.xticks()
     ylocs, ylabels  = plot.yticks()
     plot.xticks(xlocs, [1./x for x in xaxis][::len(xaxis)/len(xlocs)])
-    if sr > 0:
-        plot.yticks(ylocs, np.asarray(yaxis[::len(yaxis)/len(ylocs)])*(sr/(1000*float(args.fft))))
+    plot.yticks(ylocs, np.asarray(yaxis[::len(yaxis)/len(ylocs)])*args.fft)
     plot.title("Cyclic Coherence")
     plot.xlabel("Cyclic Frequency(Hz)")
-    plot.ylabel("Spectral Frequency(kHz)")
+    plot.ylabel("Spectral Frequency(bin)")
 
     plot.figure()
-    plot.imshow(Z, cmap=cm.jet)
+    i = plot.imshow(Z, cmap=cm.jet)
+    i.set_extent([start_alpha, stop_alpha, 1, args.fft])
     plot.title("Cyclic Coherence Heatmap")
     plot.xlabel("Cyclic Frequency(Hz)")
-    plot.ylabel("Spectral Frequency(kHz)")
+    plot.ylabel("Spectral Frequency(bin)")
     plot.colorbar()
 
     plot.figure()
@@ -162,6 +183,8 @@ def run_cyclic_coherence(sr, data):
     plot.plot(Zmin, label="Min")
     plot.plot(Zmean, label="Mean")
     plot.plot(Zmed, label="Median")
+    xlocs, xlabels = plot.xticks()
+    plot.xticks(xlocs, [1./x for x in xaxis][::len(xaxis)/len(xlocs)])
     plot.title("Cyclic Coherence vs. Cyclic Frequency")
     plot.xlabel("Cyclic Frequency(Hz)")
     plot.ylabel("Coherence")
