@@ -23,13 +23,13 @@ class AlphasAction(argparse.Action):
             print "Wrong number of arguments, require 3 values, --alphas start stop step"
             print "Using defaults " + `defaults`
             setattr(args, self.dest, defaults)
-#
+
 class EndpointsAction(argparse.Action):
     def __call__(self, parser, args, values, option = None):
         setattr(args, self.dest, map(int,values))
-        if len(args.alphas) < 2:
-            defaults = [5000, 6000]
-            print "Wrong number of arguments, require 2 values, --endpoints start stop"
+        if len(args.alphas) < 3:
+            defaults = [5000, 6000, 1]
+            print "Wrong number of arguments, require 3 values, --endpoints start stop step"
             print "Using default endpoints of " + `args.endpoints`
             setattr(args, self.dest, defaults)
 
@@ -42,7 +42,7 @@ parser.add_argument("-c", "--coherence", dest="coherence", action="store_true", 
 parser.add_argument("-w", "--wigner", dest="wigner", action="store_true", help="Plot Wigner-Ville spectrum of input")
 parser.add_argument("-f", "--fft", type=int, dest="fft", action="store", default=1024, help="Optionally set FFT size, default is 1024")
 parser.add_argument("-a", "--alphas", dest="alphas", default=[1,500,1], action=AlphasAction, nargs="*", help='Start, stop, and step values for alpha')
-parser.add_argument("-e", "--endpoints", dest="endpoints", default=[5000,6000], action=EndpointsAction, nargs="*", help='Start and stop endpoints for data')
+parser.add_argument("-e", "--endpoints", dest="endpoints", default=[5000,6000, 1], action=EndpointsAction, nargs="*", help='Start and stop endpoints for data')
 
 def run_specgram(sr, data):
     vec_len, = data.shape
@@ -228,11 +228,14 @@ except SystemExit:
 if args.filename[-4:] == ".mat":
     mat = loadmat(args.filename)
     data = mat["x"].flatten()
-    data = np.asarray(data, dtype=np.complex64)[5000:6000]
+    data = np.asarray(data, dtype=np.complex64)[::args.endpoints[2]]
+    data = data[args.endpoints[0]:args.endpoints[1]]
     sr = -1
+
 elif args.filename[-4:] == ".wav":
     sr, data = wavfile.read(args.filename)
-    data = np.asarray(data, dtype=np.complex64)[5000:6000]
+    data = np.asarray(data, dtype=np.complex64)[::args.endpoints[2]]
+    data = data[args.endpoints[0]:args.endpoints[1]]
 elif args.filename[-4:] == ".txt":
     df = pandas.read_csv(args.filename)
     rm = pandas.rolling_mean(df.Close, len(df.Close)/10000)
@@ -243,8 +246,8 @@ elif args.filename[-4:] == ".txt":
     df['vmed'] = vmed
     df.ix[abs(df.Close - df.rm) > 5*df.vstd, "Close"] = df.ix[abs(df.Close - df.rm) > 5*df.vstd, "vmed"]
     data = np.asarray(df["Close"])
-    data = data[::100]
-    data = data[:6000]
+    data = data[::args.endpoints[2]]
+    data = data[args.endpoints[0]:args.endpoints[1]]
     sr = -1
 
 if args.specgram:
