@@ -52,12 +52,14 @@ def lkfilt(y, source_scale, source_sigma, meas_sigma):
     return k
 
 def basic_kalman(data):
-    source_sigma = .1
+    source_sigma = .4
     source_scale = np.sqrt(1-source_sigma**2)
     meas_sigma = source_sigma #measurement error?
     k = lkfilt(data, source_scale, source_sigma, meas_sigma)
-    plot.plot(k)
-    plot.plot(data)
+    plot.plot(k, label="Kalman Filt")
+    plot.plot(data, label="Original")
+    plot.title("Stock Value over 1998-2012")
+    plot.legend(loc=1)
     plot.show()
 
 try:
@@ -84,7 +86,7 @@ elif args.filename[-4:] == ".txt":
     df['vmed'] = vmed
     df.ix[abs(df.Close - df.rm) > 5*df.vstd, "Close"] = df.ix[abs(df.Close - df.rm) > 5*df.vstd, "vmed"]
     data = np.asarray(df["Close"])
-    data = data[::10000]
+    #data = data[::]
     sr = -1
 
 basic_kalman(data)

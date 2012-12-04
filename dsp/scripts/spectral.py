@@ -17,7 +17,7 @@ import pandas
 
 class AlphasAction(argparse.Action):
     def __call__(self, parser, args, values, option = None):
-        setattr(args, self.dest, map(int,values))
+        setattr(args, self.dest, map(float,values))
         if len(args.alphas) < 3:
             defaults = [1, 500, 1]
             print "Wrong number of arguments, require 3 values, --alphas start stop step"
@@ -60,6 +60,8 @@ def run_specgram(sr, data):
             print "Adding " + `fft_size-leftover` + " zeros to data"
 
     time_aligned = data.reshape((vec_len/fft_size, fft_size))
+    window = np.hanning(args.fft)
+    time_aligned = time_aligned*window
     if args.verbose > 0:
         print "Resizing data to match chosen FFT size"
         print "Resized data now has shape of " + `time_aligned.shape`
@@ -69,7 +71,11 @@ def run_specgram(sr, data):
             print "Calculating spectrogram"
             print "Size of FFT specrogram data " + `fft.shape`
         if not args.noplot:
-            plot.imshow(abs(fft))
+            i = plot.imshow(abs(np.fft.fftshift(fft, axes=0))[:,:args.fft/2],aspect="auto")
+            i.set_extent([1,time_aligned.shape[1]/2,0,time_aligned.shape[0]*time_aligned.shape[1]])
+            plot.title("Spectrogram")
+            plot.xlabel("FFT(bin)")
+            plot.ylabel("Start time of FFT(samples)")
             plot.show()
         else:
             print "No plot option chosen, skipping plot..."
@@ -108,8 +114,8 @@ def run_cyclic_coherence(sr, data):
     stop_alpha = args.alphas[1]
     step_alpha = args.alphas[2]
 
-    alphas = range(start_alpha, stop_alpha, step_alpha)
-    alphas = [ 1./x if x !=0 else None for x in alphas ]
+    alphas = np.arange(start_alpha, stop_alpha, step_alpha)
+    alphas = [ step_alpha/x if x !=0 else None for x in alphas ]
     alphas = filter(lambda x: x != None, alphas)
     #http://stackoverflow.com/questions/9152958/matplotlib-3d-plot-2d-format-for-input-data
     beta = .5
@@ -119,7 +125,7 @@ def run_cyclic_coherence(sr, data):
     xaxis = np.asarray(xaxis)
     for n,alpha in enumerate(xaxis):
         if args.verbose > 0:
-            print "Running alpha " + `1./alpha`
+            print "Running alpha " + `step_alpha/alpha`
         t = np.arange(0,data.shape[0])
         plus_alpha = np.asarray([np.exp(1j*np.pi*alpha*beta*k) for k in t], dtype=np.complex64)
         minus_alpha = np.asarray([np.exp(-1j*np.pi*alpha*beta*k) for k in t], dtype=np.complex64)
@@ -160,14 +166,14 @@ def run_cyclic_coherence(sr, data):
     ax.plot_surface(X, Y, Z, cmap=cm.jet)
     xlocs, xlabels = plot.xticks()
     ylocs, ylabels  = plot.yticks()
-    plot.xticks(xlocs, [1./x for x in xaxis][::len(xaxis)/len(xlocs)])
-    plot.yticks(ylocs, np.asarray(yaxis[::len(yaxis)/len(ylocs)])*args.fft)
+    plot.xticks(xlocs, [step_alpha/x for x in xaxis][::len(xaxis)/len(xlocs)])
+    plot.yticks(ylocs, np.asarray(yaxis[::len(yaxis)/len(ylocs)]))
     plot.title("Cyclic Coherence")
     plot.xlabel("Cyclic Frequency(Hz)")
     plot.ylabel("Spectral Frequency(bin)")
 
     plot.figure()
-    i = plot.imshow(Z, cmap=cm.jet)
+    i = plot.imshow(Z, aspect="auto", cmap=cm.jet)
     i.set_extent([start_alpha, stop_alpha, 1, args.fft])
     plot.title("Cyclic Coherence Heatmap")
     plot.xlabel("Cyclic Frequency(Hz)")
@@ -184,7 +190,7 @@ def run_cyclic_coherence(sr, data):
     plot.plot(Zmean, label="Mean")
     plot.plot(Zmed, label="Median")
     xlocs, xlabels = plot.xticks()
-    plot.xticks(xlocs, [1./x for x in xaxis][::len(xaxis)/len(xlocs)])
+    plot.xticks(xlocs, [step_alpha/x for x in xaxis][::len(xaxis)/len(xlocs)])
     plot.title("Cyclic Coherence vs. Cyclic Frequency")
     plot.xlabel("Cyclic Frequency(Hz)")
     plot.ylabel("Coherence")
@@ -214,7 +220,7 @@ def run_wigner_ville(sr, data):
     def chi2inv(p, v):
         return st.invgamma(v/2,scale=2).ppf(p)
     significance = np.mean(np.mean(wdata))*chi2inv(1-P, 2)
-    plot.contourf(wdata[(nfft/4+1):-(nfft/4+1),:wdata.shape[1]/2], 255, vmin=significance, vmax=np.max(np.max(wdata)), cmap=cm.jet)
+    plot.contourf(wdata[(nfft/4+1):-(nfft/4+1),:wdata.shape[1]/2], 255, vmin=significance, vmax=np.max(np.max(wdata)), cmap=cm.gist_yarg)
     plot.xlabel("Frequency")
     plot.ylabel("Time in samples")
     plot.show()
