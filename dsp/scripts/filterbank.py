@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #Needs the following libs
-#sudo apt-get install python-numpy python-scipy
+#sudo apt-get install python-numpy python-scipy python-matplotlib
 
 import scipy.io.wavfile as wavfile
 from scipy.io import loadmat
@@ -28,9 +28,10 @@ parser.add_argument("-e", "--endpoints", dest="endpoints", default=[0,-1, 1], ac
 
 def polyphase_analysis(data):
     filt_const = 5
-    num_filters = 10
+    num_filters = 4
     num_taps = num_filters*filt_const
-    b = sg.firwin(num_taps,1./(num_filters))
+
+    #decimate original data
     x = [0]*num_filters
     if args.verbose > 0:
         print "Original shape of data was " + `data.shape`
@@ -52,6 +53,8 @@ def polyphase_analysis(data):
         num_taps += num_filters-num_taps%num_filters
         print "Changing num_taps to " + `num_taps`
 
+    #decimate prototype filter
+    b = sg.firwin(num_taps,1./(num_filters))
     polyphase_filts = np.zeros((num_filters,num_taps/num_filters),dtype=np.complex64)
     for i in range(num_filters):
         polyphase_filts[i,:] = np.asarray(b[0+i::num_filters])
@@ -62,6 +65,9 @@ def polyphase_analysis(data):
         plot.show()
 
     decimated = np.vstack(x)
+    if args.verbose > 0:
+        print "Size of decimated data is " + `decimated.shape`
+        print "Size of decimated filter is " + `polyphase_filts.shape`
     filtered = np.asarray([sg.fftconvolve(polyphase_filts[n,:], decimated[n,:]) for n in range(num_filters)])
     out = np.fft.fft(filtered, n=num_filters, axis=0)
     if not args.noplots:
