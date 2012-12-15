@@ -1,27 +1,21 @@
 #!/usr/bin/python
-#Attempt to apply spectral correlation function to data and plot 3D
-#http://www.johnvinyard.com/blog/?p=268
+#Needs the following libs
+#sudo apt-get install python-numpy python-scipy
+
 import scipy.io.wavfile as wavfile
 from scipy.io import loadmat
 import numpy as np
 import argparse
 import sys
 import matplotlib.pyplot as plot
-from matplotlib import cm
-from numpy.lib.stride_tricks import as_strided as ast
-import copy
-from mpl_toolkits.mplot3d import Axes3D
 import scipy.stats as st
 import scipy.signal as sg
-import time
-import pandas
-from spectral import specgram
 
 class EndpointsAction(argparse.Action):
     def __call__(self, parser, args, values, option = None):
         setattr(args, self.dest, map(int,values))
         if len(args.endpoints) < 3:
-            defaults = [5000, 6000, 1]
+            defaults = [0, -1, 1]
             print "Wrong number of arguments, require 3 values, --endpoints start stop step"
             print "Using default endpoints of " + `args.endpoints`
             setattr(args, self.dest, defaults)
@@ -29,13 +23,12 @@ class EndpointsAction(argparse.Action):
 parser = argparse.ArgumentParser(description="Apply filterbank to input data")
 parser.add_argument(dest="filename", help="WAV file to be processed")
 parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="Show verbose output, use -vv for highest verbosity")
-parser.add_argument("-f", "--filters", dest="filters", action="store_true", help="Show filter plots")
-parser.add_argument("-p", "--plots", dest="plots", action="store_true", help="Show bank plots")
-parser.add_argument("-e", "--endpoints", dest="endpoints", default=[5000,6000, 1], action=EndpointsAction, nargs="*", help='Start and stop endpoints for data')
+parser.add_argument("-n", "--noplots", dest="noplots", action="store_true", help="Don't show plots")
+parser.add_argument("-e", "--endpoints", dest="endpoints", default=[0,-1, 1], action=EndpointsAction, nargs="*", help='Start and stop endpoints for data, default will try to process the whole file')
 
 def polyphase_analysis(data):
-    filt_const = 1000
-    num_filters = 16
+    filt_const = 5
+    num_filters = 10
     num_taps = num_filters*filt_const
     b = sg.firwin(num_taps,1./(num_filters))
     x = [0]*num_filters
@@ -61,17 +54,17 @@ def polyphase_analysis(data):
 
     polyphase_filts = np.zeros((num_filters,num_taps/num_filters),dtype=np.complex64)
     for i in range(num_filters):
-        polyphase_filts[i,:] = np.asarray(b[0+i::num_filters]).T
+        polyphase_filts[i,:] = np.asarray(b[0+i::num_filters])
 
-    if args.filters:
+    if not args.noplots:
         w,h = sg.freqz(b)
         plot.plot(w/max(w), np.abs(h))
         plot.show()
 
     decimated = np.vstack(x)
     filtered = np.asarray([sg.fftconvolve(polyphase_filts[n,:], decimated[n,:]) for n in range(num_filters)])
-    out = np.fft.fft(filtered, axis=0)
-    if args.plots:
+    out = np.fft.fft(filtered, n=num_filters, axis=0)
+    if not args.noplots:
         plot.specgram(data)
         plot.show()
         for i in range(num_filters):
