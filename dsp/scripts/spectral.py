@@ -15,72 +15,67 @@ import scipy.stats as st
 import time
 import pandas
 
-class AlphasAction(argparse.Action):
-    def __call__(self, parser, args, values, option = None):
-        setattr(args, self.dest, map(float,values))
-        if len(args.alphas) < 3:
-            defaults = [1, 500, 1]
-            print "Wrong number of arguments, require 3 values, --alphas start stop step"
-            print "Using defaults " + `defaults`
-            setattr(args, self.dest, defaults)
+if __name__ == "__main__":
+    class AlphasAction(argparse.Action):
+        def __call__(self, parser, args, values, option = None):
+            setattr(args, self.dest, map(float,values))
+            if len(args.alphas) < 3:
+                defaults = [1, 500, 1]
+                print "Wrong number of arguments, require 3 values, --alphas start stop step"
+                print "Using defaults " + `defaults`
+                setattr(args, self.dest, defaults)
 
-class EndpointsAction(argparse.Action):
-    def __call__(self, parser, args, values, option = None):
-        setattr(args, self.dest, map(int,values))
-        if len(args.alphas) < 3:
-            defaults = [5000, 6000, 1]
-            print "Wrong number of arguments, require 3 values, --endpoints start stop step"
-            print "Using default endpoints of " + `args.endpoints`
-            setattr(args, self.dest, defaults)
+    class EndpointsAction(argparse.Action):
+        def __call__(self, parser, args, values, option = None):
+            setattr(args, self.dest, map(int,values))
+            if len(args.endpoints) < 3:
+                defaults = [5000, 6000, 1]
+                print "Wrong number of arguments, require 3 values, --endpoints start stop step"
+                print "Using default endpoints of " + `args.endpoints`
+                setattr(args, self.dest, defaults)
 
-parser = argparse.ArgumentParser(description="Apply spectral analysis techniques to input data")
-parser.add_argument(dest="filename", help="WAV file to be processed")
-parser.add_argument("-n", "--noplot", dest="noplot", action="store_true", help="WAV file to be processed")
-parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="Show verbose output, use -vv for highest verbosity")
-parser.add_argument("-s", "--specgram", dest="specgram", action="store_true", help="Show spectrogram of input wavefile")
-parser.add_argument("-c", "--coherence", dest="coherence", action="store_true", help="Plot cyclic coherence of input")
-parser.add_argument("-w", "--wigner", dest="wigner", action="store_true", help="Plot Wigner-Ville spectrum of input")
-parser.add_argument("-f", "--fft", type=int, dest="fft", action="store", default=1024, help="Optionally set FFT size, default is 1024")
-parser.add_argument("-a", "--alphas", dest="alphas", default=[1,500,1], action=AlphasAction, nargs="*", help='Start, stop, and step values for alpha')
-parser.add_argument("-e", "--endpoints", dest="endpoints", default=[5000,6000, 1], action=EndpointsAction, nargs="*", help='Start and stop endpoints for data')
+    parser = argparse.ArgumentParser(description="Apply spectral analysis techniques to input data, default plot is just a time-series of the data")
+    parser.add_argument(dest="filename", help="WAV file to be processed")
+    #parser.add_argument("-n", "--noplot", dest="noplot", action="store_true", help="WAV file to be processed")
+    parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="Show verbose output, use -vv for highest verbosity")
+    parser.add_argument("-s", "--specgram", dest="specgram", action="store_true", help="Show spectrogram of input wavefile")
+    parser.add_argument("-c", "--coherence", dest="coherence", action="store_true", help="Plot cyclic coherence of input")
+    parser.add_argument("-w", "--wigner", dest="wigner", action="store_true", help="Plot Wigner-Ville spectrum of input")
+    parser.add_argument("-f", "--fft", type=int, dest="fft", action="store", default=1024, help="Optionally set FFT size, default is 1024")
+    parser.add_argument("-a", "--alphas", dest="alphas", default=[1,500,1], action=AlphasAction, nargs="*", help='Start, stop, and step values for alpha')
+    parser.add_argument("-e", "--endpoints", dest="endpoints", default=[5000,6000, 1], action=EndpointsAction, nargs="*", help='Start and stop endpoints for data')
+    parser.add_argument("-l", "--label", dest="label", default=None, action="store", nargs="*", help='Label for basic data plot')
 
-def run_specgram(sr, data):
+def specgram(data, fft_size, verbose=0, div=True):
     vec_len, = data.shape
-    fft_size = args.fft
-    if args.verbose > 0:
+    if verbose > 0:
         print `args.filename` + " has shape of " + `data.shape`
         print `args.filename` + " has sample rate of " + `sr`
     leftover = vec_len%fft_size
     if leftover != 0:
         data = np.hstack((data, np.zeros(fft_size-leftover)))
         vec_len, = data.shape
-        if args.verbose > 0:
+        if verbose > 0:
             print "FFT size chosen is " + `fft_size` + " bins"
             print "FFT size does not match data shape, resizing by appending zeros"
             print "Adding " + `fft_size-leftover` + " zeros to data"
 
     time_aligned = data.reshape((vec_len/fft_size, fft_size))
-    window = np.hanning(args.fft)
+    window = np.hanning(fft_size)
     time_aligned = time_aligned*window
-    if args.verbose > 0:
+    if verbose > 0:
         print "Resizing data to match chosen FFT size"
         print "Resized data now has shape of " + `time_aligned.shape`
-
-        fft = np.fft.fftn(time_aligned, s=(fft_size,), axes=(1,))
-        if args.verbose:
-            print "Calculating spectrogram"
-            print "Size of FFT specrogram data " + `fft.shape`
-        if not args.noplot:
-            i = plot.imshow(abs(np.fft.fftshift(fft, axes=0))[:,:args.fft/2],aspect="auto")
-            i.set_extent([1,time_aligned.shape[1]/2,0,time_aligned.shape[0]*time_aligned.shape[1]])
-            plot.title("Spectrogram")
-            plot.xlabel("FFT(bin)")
-            plot.ylabel("Start time of FFT(samples)")
-            plot.show()
-        else:
-            print "No plot option chosen, skipping plot..."
-            print "Exiting, spectrogram complete!"
-            sys.exit()
+        print "Calculating spectrogram"
+        print "Size of FFT specrogram data " + `fft.shape`
+    fft = np.fft.fftn(time_aligned, s=(fft_size,), axes=(1,)).T
+    divisor = 2 if div else 1
+    fft = fft[:,:fft.shape[1]/divisor]
+    plot.imshow(abs(fft),aspect="auto", extent=[1,time_aligned.shape[1]/divisor,0,time_aligned.shape[0]*time_aligned.shape[1]])
+    plot.title("Spectrogram")
+    plot.xlabel("FFT(bin)")
+    plot.ylabel("Start time of FFT(samples)")
+    plot.show()
 
 def alpha_run(d1, d2, alpha, beta):
     if d1.shape != d2.shape:
@@ -199,66 +194,83 @@ def run_cyclic_coherence(sr, data):
 
 def run_wigner_ville(sr, data):
     fftsizes = [2**i for i in range(1,17)]
-    nfft = filter(lambda x: x > 2*data.shape[0], fftsizes)[0]
-    data = np.hstack((np.asarray(data, dtype=np.int16), np.zeros(nfft-data.shape[0])))
+    nfft = args.fft
+    print nfft
+    #nfft = filter(lambda x: x > 2*data.shape[0], fftsizes)[0]
+    data = np.hstack((np.asarray(data, dtype=np.int16), np.zeros(data.shape[0], dtype=np.int16)))
     cdata = np.conjugate(data)
     if args.verbose > 0:
         print `args.filename` + " has shape of " + `data.shape`
         print `args.filename` + " has sample rate of " + `sr`
     max_tau = len(data)-1
-    wdata = np.zeros((nfft, len(data)), dtype=np.complex64)
+    #wdata = np.zeros((nfft, len(data)), dtype=np.complex64)
+    wdata = np.zeros((len(data), len(data)), dtype=np.complex64)
     for n in range(max_tau):
-        ix = range(max([-n, -max_tau+n]),min([n+1,max_tau-n+1]))
-        iy = [t + nfft*(1 if t < 0 else 0)  for t in ix]
+        ix = range(max([-n, -max_tau+n]),min([n,max_tau-n-1]))
+        iy = [t + nfft*(1 if t < 0 else 0) for t in ix]
+        #print iy
+        #print wdata.shape
         if len(ix) == 0:
             ix = iy = [0]
         for v,i in enumerate(iy):
-            wdata[i,n] = data[n+ix[v]]*cdata[n-ix[v]]
+            wdata[i,n] = data[n+(ix[v]/2)]*cdata[n-(ix[v]/2)]
 
     wdata = np.fft.fftshift(np.real(np.fft.fft(wdata)),axes=0)
     P = .005
     def chi2inv(p, v):
         return st.invgamma(v/2,scale=2).ppf(p)
     significance = np.mean(np.mean(wdata))*chi2inv(1-P, 2)
-    plot.contourf(wdata[(nfft/4+1):-(nfft/4+1),:wdata.shape[1]/2], 255, vmin=significance, vmax=np.max(np.max(wdata)), cmap=cm.gist_yarg)
+    #plot.contourf(wdata[(nfft/4+1):-(nfft/4+1),:wdata.shape[1]/2], 255, vmin=significance, vmax=np.max(np.max(wdata)), cmap=cm.gist_yarg)
+    plot.contourf(wdata[:,:wdata.shape[1]/2], 255, vmin=significance, vmax=np.max(np.max(wdata)), cmap=cm.gist_yarg)
     plot.xlabel("Frequency")
     plot.ylabel("Time in samples")
     plot.show()
 
-try:
-    args = parser.parse_args()
-except SystemExit:
-    parser.print_help()
-    sys.exit()
+def run_basic_plot(sr, data):
+    plot.plot(data, label="Original data")
+    if args.label is not None:
+        plot.title(" ".join(args.label))
+    plot.legend(loc=1)
+    plot.show()
 
-if args.filename[-4:] == ".mat":
-    mat = loadmat(args.filename)
-    data = mat["x"].flatten()
-    data = np.asarray(data, dtype=np.complex64)[::args.endpoints[2]]
-    data = data[args.endpoints[0]:args.endpoints[1]]
-    sr = -1
+if __name__ == "__main__":
+    try:
+        args = parser.parse_args()
+    except SystemExit:
+        parser.print_help()
+        sys.exit()
 
-elif args.filename[-4:] == ".wav":
-    sr, data = wavfile.read(args.filename)
-    data = np.asarray(data, dtype=np.complex64)[::args.endpoints[2]]
-    data = data[args.endpoints[0]:args.endpoints[1]]
-elif args.filename[-4:] == ".txt":
-    df = pandas.read_csv(args.filename)
-    rm = pandas.rolling_mean(df.Close, len(df.Close)/10000)
-    vstd = pandas.rolling_std(df.Close, len(df.Close)/10000)
-    vmed = pandas.rolling_median(df.Close, len(df.Close)/10000)
-    df['rm'] = rm
-    df['vstd'] = vstd
-    df['vmed'] = vmed
-    df.ix[abs(df.Close - df.rm) > 5*df.vstd, "Close"] = df.ix[abs(df.Close - df.rm) > 5*df.vstd, "vmed"]
-    data = np.asarray(df["Close"])
-    data = data[::args.endpoints[2]]
-    data = data[args.endpoints[0]:args.endpoints[1]]
-    sr = -1
+    if args.filename[-4:] == ".mat":
+        mat = loadmat(args.filename)
+        data = mat["x"].flatten()
+        data = np.asarray(data, dtype=np.complex64)[::args.endpoints[2]]
+        data = data[args.endpoints[0]:args.endpoints[1]]
+        sr = -1
 
-if args.specgram:
-    run_specgram(sr, data)
-elif args.coherence:
-    run_cyclic_coherence(sr, data)
-elif args.wigner:
-    run_wigner_ville(sr, data)
+    elif args.filename[-4:] == ".wav":
+        sr, data = wavfile.read(args.filename)
+        data = np.asarray(data, dtype=np.complex64)[::args.endpoints[2]]
+        data = data[args.endpoints[0]:args.endpoints[1]]
+
+    elif args.filename[-4:] == ".txt":
+        df = pandas.read_csv(args.filename)
+        rm = pandas.rolling_mean(df.Close, len(df.Close)/10000)
+        vstd = pandas.rolling_std(df.Close, len(df.Close)/10000)
+        vmed = pandas.rolling_median(df.Close, len(df.Close)/10000)
+        df['rm'] = rm
+        df['vstd'] = vstd
+        df['vmed'] = vmed
+        df.ix[abs(df.Close - df.rm) > 5*df.vstd, "Close"] = df.ix[abs(df.Close - df.rm) > 5*df.vstd, "vmed"]
+        data = np.asarray(df["Close"])
+        data = data[::args.endpoints[2]]
+        data = data[args.endpoints[0]:args.endpoints[1]]
+        sr = -1
+
+    if args.specgram:
+        specgram(data, args.fft, args.verbose)
+    elif args.coherence:
+        run_cyclic_coherence(sr, data)
+    elif args.wigner:
+        run_wigner_ville(sr, data)
+    else:
+        run_basic_plot(sr, data)
