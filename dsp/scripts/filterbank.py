@@ -27,7 +27,7 @@ parser.add_argument("-n", "--noplots", dest="noplots", action="store_true", help
 parser.add_argument("-e", "--endpoints", dest="endpoints", default=[0,-1, 1], action=EndpointsAction, nargs="*", help='Start and stop endpoints for data, default will try to process the whole file')
 
 def polyphase_analysis(data):
-    filt_const = 5
+    filt_const = 20
     num_filters = 4
     num_taps = num_filters*filt_const
 
@@ -54,7 +54,7 @@ def polyphase_analysis(data):
         print "Changing num_taps to " + `num_taps`
 
     #decimate prototype filter
-    b = sg.firwin(num_taps,1./(num_filters))
+    b = sg.firwin(num_taps,1./(2*num_taps*num_filters))
     polyphase_filts = np.zeros((num_filters,num_taps/num_filters),dtype=np.complex64)
     for i in range(num_filters):
         polyphase_filts[i,:] = np.asarray(b[0+i::num_filters])
@@ -69,7 +69,7 @@ def polyphase_analysis(data):
         print "Size of decimated data is " + `decimated.shape`
         print "Size of decimated filter is " + `polyphase_filts.shape`
     filtered = np.asarray([sg.fftconvolve(polyphase_filts[n,:], decimated[n,:]) for n in range(num_filters)])
-    out = np.fft.fft(filtered, n=num_filters, axis=0)
+    out = np.fft.ifft(filtered, n=num_filters, axis=0)
     if not args.noplots:
         plot.specgram(data)
         plot.show()
