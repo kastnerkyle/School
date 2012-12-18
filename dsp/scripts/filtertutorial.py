@@ -120,6 +120,6 @@ decimated = basic[::DECIMATE_BY]
 show_specgram(decimated, title="Frequency plot of filtered, then decimated data")
 decimated_filtered = polyphase_single_filter(data, DECIMATE_BY, prototype_filter())
 show_specgram(decimated_filtered, title="Frequency plot of polyphase filtered data")
-decimated_filterbank = polyphase_analysis(data, DECIMATE_BY, prototype_filter())
-for i in range(decimated_filterbank.shape[0]):
-    show_specgram(decimated_filterbank[i], title="Frequency plot of output " + `i` + " from filterbank")
+#decimated_filterbank = polyphase_analysis(data, DECIMATE_BY, prototype_filter())
+#for i in range(decimated_filterbank.shape[0]):
+#    show_specgram(decimated_filterbank[i], title="Frequency plot of output " + `i` + " from filterbank")
