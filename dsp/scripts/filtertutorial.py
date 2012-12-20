@@ -24,8 +24,8 @@ parser.add_argument(dest="filename", help="WAV file to be processed")
 parser.add_argument("-e", "--endpoints", dest="endpoints", default=[0,None, 1], action=EndpointsAction, nargs="*", help='Start and stop endpoints for data, default will try to process the whole file')
 parser.add_argument("-v", "--verbose", dest="verbose", action="count", help='Verbosity, -v for verbose or -vv for very verbose')
 
-DECIMATE_BY = 4
-FILT_CONST = 200
+DECIMATE_BY = 8
+FILT_CONST = 50
 def show_filter_response(filt, title=None):
     w,h = sg.freqz(filt)
     plot.plot(w/max(w), np.abs(h))
@@ -58,6 +58,7 @@ def polyphase_single_filter(input_data, decimate_by, filt):
     #3
     #2
     data_streams = np.vstack((head_data_stream, tail_data_streams[::-1,:]))
+    data_streams = decimate(input_data, decimate_by)
     filter_streams = np.asarray([np.asarray(filt[0+i::decimate_by]) for i in range(decimate_by)])
     filtered_data_streams = np.asarray([sg.lfilter(filter_streams[n,:], 1, data_streams[n,:]) for n in range(decimate_by)])
     filtered_data = np.sum(filtered_data_streams, axis=0)
@@ -83,15 +84,14 @@ def decimate(data, decimate_by):
 def polyphase_analysis(data, decimate_by, filt):
     if len(data) % decimate_by != 0:
         data = data[:len(data)-len(data)%decimate_by]
-
+    orig_len=len(data)
     #decimate prototype filter
     polyphase_filts = np.zeros((decimate_by,len(filt)/decimate_by),dtype=np.complex64)
     for i in range(decimate_by):
         polyphase_filts[i,:] = np.asarray(filt[0+i::decimate_by])
 
-    #I am decimating twice here... need to fix this
-    decimated = decimate(data,decimate_by)
-    filtered = np.asarray([polyphase_single_filter(decimated, 1, polyphase_filts[n,:]) for n in range(decimate_by)])
+    decimated = decimate(data, decimate_by)
+    filtered = np.asarray([sg.fftconvolve(polyphase_filts[n,:],decimated[n,:]) for n in range(decimate_by)])
     out = np.fft.ifft(filtered, n=decimate_by, axis=0)
     return out
 
@@ -110,7 +110,7 @@ if args.filename[-4:] == ".wav":
         data = data[args.endpoints[0]:args.endpoints[1]]
     #data /= 32768
 
-def prototype_filter(num_taps=DECIMATE_BY*FILT_CONST, normalized_cutoff=1./(2*DECIMATE_BY)):
+def prototype_filter(num_taps=DECIMATE_BY*FILT_CONST, normalized_cutoff=1./(DECIMATE_BY)):
     return sg.firwin(num_taps, normalized_cutoff)
 
 show_specgram(data, title="Frequency plot of initial data")
@@ -120,6 +120,6 @@ decimated = basic[::DECIMATE_BY]
 show_specgram(decimated, title="Frequency plot of filtered, then decimated data")
 decimated_filtered = polyphase_single_filter(data, DECIMATE_BY, prototype_filter())
 show_specgram(decimated_filtered, title="Frequency plot of polyphase filtered data")
-#decimated_filterbank = polyphase_analysis(data, DECIMATE_BY, prototype_filter())
-#for i in range(decimated_filterbank.shape[0]):
-#    show_specgram(decimated_filterbank[i], title="Frequency plot of output " + `i` + " from filterbank")
+decimated_filterbank = polyphase_analysis(data, DECIMATE_BY, prototype_filter())
+for i in range(decimated_filterbank.shape[0]):
+    show_specgram(decimated_filterbank[i], title="Frequency plot of output " + `i` + " from filterbank")
