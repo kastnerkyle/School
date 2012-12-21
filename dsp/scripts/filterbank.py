@@ -20,12 +20,20 @@ class EndpointsAction(argparse.Action):
             setattr(args, self.dest, defaults)
 
 parser = argparse.ArgumentParser(description="Apply filter tutorial to input data")
-parser.add_argument(dest="filename", help="WAV file to be processed")
+parser.add_argument("-f", "--filename", dest="filename", default=".noexist", help="Optional WAV file to be processed, default generates a 1 sec full range complex chirp to filter")
 parser.add_argument("-e", "--endpoints", dest="endpoints", default=[0,None, 1], action=EndpointsAction, nargs="*", help='Start and stop endpoints for data, default will try to process the whole file')
 parser.add_argument("-v", "--verbose", dest="verbose", action="count", help='Verbosity, -v for verbose or -vv for very verbose')
 
 DECIMATE_BY = 4
 FILT_CONST = 50
+def gen_complex_chirp(fs=44100):
+    f0=-fs/2.1
+    f1=fs/2.1
+    t1 = 1
+    beta = (f1-f0)/float(t1)
+    t = np.arange(0,t1,t1/float(fs))
+    return np.exp(2j*np.pi*(.5*beta*(t**2) + f0*t))
+
 def show_filter_response(filt, title=None):
     w,h = sg.freqz(filt)
     plot.plot(w/max(w), np.abs(h))
@@ -91,6 +99,8 @@ if args.filename[-4:] == ".wav":
     else:
         data = data[args.endpoints[0]:args.endpoints[1]]
     #data /= 32768
+else:
+    data = gen_complex_chirp()
 
 def prototype_filter(num_taps=DECIMATE_BY*FILT_CONST, normalized_cutoff=1./(DECIMATE_BY)):
     return sg.firwin(num_taps, normalized_cutoff)
