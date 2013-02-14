@@ -21,8 +21,6 @@ for i in range(1,int(float(total_obs)/N)-1):
     posterior_b=prior_b+1/2.*np.sum((group-primary_mean)**2)
     all_a.append(posterior_a)
     all_b.append(posterior_b)
-    #I don't think this one is corect but notes say E(x) = a/b...
-    #all_meanprec.append((N/2.+1)/(1/2.*np.sum((group-primary_mean)**2)))
     all_meanprec.append(posterior_a/posterior_b)
     all_varprec.append(posterior_a/(posterior_b**2))
     prior_a=posterior_a
@@ -30,8 +28,6 @@ for i in range(1,int(float(total_obs)/N)-1):
 
 plot.figure()
 print "Estimated variance is " + `1./all_meanprec[-1]`
-#No idea why this seems to work... but power series expansion gives good bias correction for N=2:1000
-#But I still have no idea why N has any effect on the estimation - should be invariant
 print "Confidence in variance estimation is " + `1-all_varprec[-1]`
 plot.plot(all_meanprec)
 plot.figure()

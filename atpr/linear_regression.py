@@ -13,8 +13,8 @@ def gen_gaussian(x,m,n):
         return np.exp(-(np.abs(x-m)**2)/(2*float(n)**2))
 
 N = 10
-noise_var = B = .1
-#Calculate using the Penrose-Moore Pseudo Inverse - direct calculation seems to have some numerical instability
+noise_var = B = .8
+#Calculate using the Moore-Penrose pseudoinverse
 MPSI = False
 data = w = np.matrix(np.random.randn(N,1))
 w += np.sqrt(B)*np.random.randn(N,1)
@@ -27,7 +27,7 @@ test_data = q = w + np.sqrt(B)*np.random.randn(N,1)
 t = basis*(q)
 use_MPSI = basis.shape[0] != basis.shape[1] or MPSI == True
 if use_MPSI:
-    maximum_likelihood = wml = np.linalg.inv(basis.conj().T*basis)*basis.conj().T*t
+    maximum_likelihood = wml = np.linalg.inv(basis.T*basis)*basis.T*t
 else:
     maximum_likelihood = wml = np.linalg.inv(basis)*t
 f, axarr = plot.subplots(3)
