@@ -10,10 +10,13 @@ def gen_polynomial(x, m):
     return x**m
 
 N = 100
+#N_basis works well at low values for polynomial regression but dft regression needs more...
 N_basis = 6
-noise_var = B = .2
+noise_var = B = .5
+
 #Calculate using the Moore-Penrose pseudoinverse
 MPSI = True
+
 basis = np.matrix(np.zeros((N,N)), dtype=np.complex64)
 xs = np.matrix(np.arange(N)/float(N)).T
 freq = 6
@@ -35,8 +38,9 @@ if use_MPSI:
     maximum_likelihood = wml = np.linalg.pinv(basis)*t
 else:
     maximum_likelihood = wml = np.linalg.inv(basis)*t
+
 plot.figure()
 plot.plot(ys, 'k')
-#plot.plot(w, 'b')
+plot.plot(w, 'b')
 plot.plot(np.real(wml), 'g')
 plot.show()
