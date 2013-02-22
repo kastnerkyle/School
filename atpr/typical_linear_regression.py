@@ -12,7 +12,7 @@ def gen_polynomial(x, m):
 N = 100
 #N_basis works well at low values for polynomial regression but dft regression needs more...
 N_basis = 6
-noise_var = B = .5
+noise_var = B = .2
 
 #Calculate using the Moore-Penrose pseudoinverse
 MPSI = True
@@ -21,7 +21,8 @@ basis = np.matrix(np.zeros((N,N)), dtype=np.complex64)
 xs = np.matrix(np.arange(N)/float(N)).T
 freq = 6
 ys = np.sin(freq*2*np.pi*xs)
-w = ys + np.sqrt(B)*np.random.randn(N,1)
+w = ys #+ np.sqrt(B)*np.random.randn(N,1)
+#Trained on model data rather than measured...
 for m in range(N_basis):
     for n in range(N):
         if n == 0:
@@ -30,7 +31,7 @@ for m in range(N_basis):
             #basis[m,n] = gen_dft(m,n,N)
             basis[m,n] = gen_polynomial(w[n], m)
 
-test_data = t = basis*w
+test_data = t = basis*(w + np.sqrt(B)*np.random.randn(N,1))
 use_MPSI = (basis.shape[0] != basis.shape[1] or MPSI == True)
 if use_MPSI:
     #Direct calculation appears to have numerical instability issues...
