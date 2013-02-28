@@ -19,7 +19,6 @@ prior_mean = 0.
 prior_var = 1.
 prior_kappa = 1.
 prior_v = 0.
-#priormean=0; priorvariance=1;
 all_mean_guess = []
 all_var_guess = []
 for i in range(total_obs):
