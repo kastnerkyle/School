@@ -1,11 +1,18 @@
 #!/usr/bin/python
 import numpy as np
 import matplotlib.pyplot as plot
-total_obs = 100
+total_obs = 1000
 primary_mean = 5.
-primary_var = known_var = 14.
+primary_var = known_var = 4.
 x = np.sqrt(primary_var)*np.random.randn(total_obs) + primary_mean
 f, axarr = plot.subplots(3)
+f.suptitle("Unknown mean ($\mu=$"+`primary_mean`+"), known variance ($\sigma^2=$"+`known_var`+")")
+y0label = "Timeseries"
+y1label = "Estimate for mean"
+y2label = "Doubt in estimate"
+axarr[0].set_ylabel(y0label)
+axarr[1].set_ylabel(y1label)
+axarr[2].set_ylabel(y2label)
 axarr[0].plot(x)
 prior_mean = 0.
 prior_var = 1000000000000.
