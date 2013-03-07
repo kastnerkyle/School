@@ -29,11 +29,10 @@ for n in range(N):
         basis[0,i] = gen_polynomial(xs[n], i)
     s_inv = prior_s.I*np.eye(N_basis)+b*(basis.T*basis)
     s = s_inv.I*np.eye(N_basis)
-    tmp = s*(prior_s.I*prior_m+(b*basis.T*t[n]))
-    for i in range(N_basis):
-        m[i,n] = tmp[i,0]
+    #Need to use .squeeze() sp broadcasting works correctly
+    m[:,n] = (s*(prior_s.I*prior_m+(b*basis.T*t[n]))).squeeze()
     y = m[0,n] + m[1,n]*xaxis + m[2,n]*np.square(xaxis)
-    plot.plot(xaxis, y, "g")
+    #plot.plot(xaxis, y, "g")
     for i in range(N_basis):
         prior_m[i,0] = m[i,n]
     prior_s = s
