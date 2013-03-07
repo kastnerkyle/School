@@ -3,19 +3,19 @@ import numpy as np
 import matplotlib.pyplot as plot
 import math
 
-def gen_dft(m, n, N):
-    return np.exp(1j*-2*m*n/N)
-
-def gen_polynomial(x, m):
-    return x**m
 
 N = 10
-N_basis = 3
 noise_var = B = 5
-basis = np.matrix(np.zeros((N_basis,N)), dtype=np.complex64)
 xs = np.matrix(range(N)).T
 ys = np.square(xs) - 4*xs + 1
 wm = ys + np.sqrt(B)*np.random.randn(N,1)
+
+def gen_dft(m, n, N):
+    return np.exp(1j*-2*m*n/N)
+def gen_polynomial(x, m):
+    return x**m
+N_basis = 3
+basis = np.matrix(np.zeros((N_basis,N)), dtype=np.complex64)
 for m in range(N_basis):
     for n in range(N):
         if m == 0:
