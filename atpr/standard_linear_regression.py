@@ -12,11 +12,10 @@ def gen_polynomial(x, m):
 N = 10
 N_basis = 3
 noise_var = B = 5
-basis = np.matrix(np.zeros((N,N)), dtype=np.complex64)
+basis = np.matrix(np.zeros((N_basis,N)), dtype=np.complex64)
 xs = np.matrix(range(N)).T
 ys = np.square(xs) - 4*xs + 1
-
-w = ys + np.sqrt(B)*np.random.randn(N,1)
+wm = ys + np.sqrt(B)*np.random.randn(N,1)
 for m in range(N_basis):
     for n in range(N):
         if m == 0:
@@ -26,7 +25,7 @@ for m in range(N_basis):
             #To use the gen_dft basis, make sure to set N_basis = N
             #basis[m,n] = gen_dft(m, n, N)
 
-test_data = t = basis*w
+test_data = t = basis*wm
 #Calculate using the Moore-Penrose pseudoinverse using the following formula
 #maximum_likelihood = wml = np.linalg.inv(basis.T*basis)*basis.T*t
 #Direct calculation appears to have numerical instability issues...
@@ -36,6 +35,6 @@ maximum_likelihood = wml = np.linalg.pinv(basis)*t
 plot.figure()
 plot.title("Regression fit using polynomial basis function, number of basis functions = $" + `N_basis` + "$")
 plot.plot(ys, 'b')
-plot.plot(w, 'ro')
+plot.plot(wm, 'ro')
 plot.plot(np.real(wml), 'g')
 plot.show()
