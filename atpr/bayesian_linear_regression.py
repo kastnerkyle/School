@@ -24,17 +24,15 @@ m = np.zeros((N_basis, N))
 prior_s = np.matrix(np.diag(np.array([a]*N_basis)))
 s = np.zeros((N_basis, N_basis))
 for n in range(N):
-    basis = np.matrix(np.zeros(N_basis))
-    for i in range(N_basis):
-        basis[0,i] = gen_polynomial(xs[n], i)
+    poly = np.vectorize(gen_polynomial)
+    basis = poly(xs[n], np.matrix(np.arange(N_basis)))
     s_inv = prior_s.I*np.eye(N_basis)+b*(basis.T*basis)
     s = s_inv.I*np.eye(N_basis)
-    #Need to use .squeeze() sp broadcasting works correctly
+    #Need to use .squeeze() so broadcasting works correctly
     m[:,n] = (s*(prior_s.I*prior_m+(b*basis.T*t[n]))).squeeze()
     y = m[0,n] + m[1,n]*xaxis + m[2,n]*np.square(xaxis)
-    #plot.plot(xaxis, y, "g")
-    for i in range(N_basis):
-        prior_m[i,0] = m[i,n]
+    plot.plot(xaxis, y, "g")
+    prior_m[:,0] = m[:,n].squeeze()
     prior_s = s
 
 plot.plot(xaxis, y, "k")
