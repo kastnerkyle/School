@@ -11,18 +11,17 @@ xaxis = np.matrix(np.linspace(lb,ub,num=N)).T
 w = np.array([1, -4, 1])
 ys = w[0] + w[1]*xaxis + w[2]*np.square(xaxis)
 t = w[0] + w[1]*xs + +w[2]*np.square(xs) + np.sqrt(B)*np.random.randn(N,1);
-plot.plot(xaxis, ys, "b")
-plot.plot(xs, t, "ro")
 
 def gen_polynomial(x, p):
     return x**p
-N_basis = 3
+N_basis = 7
 alpha = a = 1.
 beta = b = 1./B;
 prior_m = np.zeros((N_basis, 1))
 m = np.zeros((N_basis, N))
 prior_s = np.matrix(np.diag(np.array([a]*N_basis)))
 s = np.zeros((N_basis, N_basis))
+plot.figure()
 for n in range(N):
     poly = np.vectorize(gen_polynomial)
     basis = poly(xs[n], np.matrix(np.arange(N_basis)))
@@ -35,5 +34,8 @@ for n in range(N):
     prior_m[:,0] = m[:,n].squeeze()
     prior_s = s
 
+plot.title("Bayesian regression using polynomial basis function, number of basis functions = $" + `N_basis` + "$")
+plot.plot(xaxis, ys, "b")
+plot.plot(xs, t, "ro")
 plot.plot(xaxis, y, "k")
 plot.show()
