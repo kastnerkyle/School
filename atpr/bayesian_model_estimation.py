@@ -2,9 +2,9 @@
 import numpy as np
 import matplotlib.pyplot as plot
 
-N = 10.
+N = 50.
 noise_var = B = .2**2
-lower_bound = lb = 0.
+lower_bound = lb = -5.
 upper_bound = ub = 5.
 xs = np.matrix(sorted((ub-lb)*np.random.rand(N)+lb)).T
 xaxis = np.matrix(np.linspace(lb,ub,num=N)).T
@@ -12,28 +12,29 @@ w = np.array([1, -4, 1])
 ys = w[0] + w[1]*xaxis + w[2]*np.square(xaxis)
 t = w[0] + w[1]*xs + +w[2]*np.square(xs) + np.sqrt(B)*np.random.randn(N,1);
 
-prior_alpha = 0.01 #Low precision initially
-prior_beta = 0.01 #Low guess for noise var
+prior_alpha = 0.005 #Low precision initially
+prior_beta = 0.005 #Low guess for noise var
 max_N = 7 #Upper limit on model order
 evidence = E = np.zeros(max_N)
-plot.figure()
+f, axarr = plot.subplots(2)
 def gen_polynomial(x, p):
     return x**p
+
+itr_upper_bound = 250
 for order in range(1, max_N+1):
     m = np.zeros((order, 1))
     s = np.zeros((order, order))
     poly = np.vectorize(gen_polynomial)
-    xs = np.matrix(np.arange(10)).T
     basis = poly(xs, np.tile(np.arange(order), N).reshape(N, order))
     alpha = a = prior_alpha
     beta = b = prior_beta
     itr = 0
     end_while = False
-    while end_while and itr < 100:
+    while end_while and itr < itr_upper_bound:
         itr += 1
         s_inv = a*np.eye(order)+b*(basis.T*basis)
         m = b*(s_inv.I*(basis.T*t))
-        posterior_alpha = pa = np.matrix(order/(2*(m.T*m)))
+        posterior_alpha = pa = np.matrix(order/(2*m.T*m))
         posterior_beta = pb = np.matrix(N/(2*(t.T-m.T*basis.T)*(t.T-m.T*basis.T).T))
         if abs(pa-a)/abs(a) < .01 and abs(pb-b)/abs(b)<0.01:
             end_while = True
@@ -44,11 +45,19 @@ for order in range(1, max_N+1):
     penalty = emn = b/2.*(t.T-mn.T*basis.T)*(t.T-mn.T*basis.T).T+a/2.*mn.T*mn
     E[order-1] = order/2.*np.log(a)+N/2.*np.log(b)-emn-1./(2*np.log(np.linalg.det(A)))-N/2.*np.log(2*np.pi)
     y = (mn.T*basis.T).T
-    plot.plot(xs, y)
+    axarr[0].plot(xs, y ,"g")
 
-plot.title("Bayesian regression using polynomial basis function, number of basis functions") #= $" + `N_basis` + "$")
-plot.plot(xaxis, ys, "b")
-plot.plot(xs, t, "ro")
-plot.figure()
-plot.plot(E, "k")
+x0label = "X"
+y0label = "Y"
+x1label = "Model Order"
+y1label = "Score"
+axarr[0].set_xlabel(x0label)
+axarr[0].set_ylabel(y0label)
+axarr[1].set_xlabel(x1label)
+axarr[1].set_ylabel(y1label)
+axarr[0].set_title("Bayesian model estimation using polynomial basis functions")
+axarr[0].plot(xaxis, ys, "b")
+axarr[0].plot(xs, t, "ro")
+axarr[1].set_title("Model Evidence")
+axarr[1].plot(E, "b")
 plot.show()
