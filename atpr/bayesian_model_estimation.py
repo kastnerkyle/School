@@ -16,11 +16,14 @@ prior_alpha = 0.005 #Low precision initially
 prior_beta = 0.005 #Low guess for noise var
 max_N = 7 #Upper limit on model order
 evidence = E = np.zeros(max_N)
-f, axarr = plot.subplots(2)
+f, axarr = plot.subplots(3)
 def gen_polynomial(x, p):
     return x**p
 
 itr_upper_bound = 250
+all_y = []
+sq = lambda x: x**2
+sq = np.vectorize(sq)
 for order in range(1, max_N+1):
     m = np.zeros((order, 1))
     s = np.zeros((order, order))
@@ -30,13 +33,15 @@ for order in range(1, max_N+1):
     beta = b = prior_beta
     itr = 0
     end_while = False
-    while end_while and itr < itr_upper_bound:
+    while not end_while and itr < itr_upper_bound:
         itr += 1
+        first_part = a*np.eye(order)
+        second_part = b*(basis.T*basis)
         s_inv = a*np.eye(order)+b*(basis.T*basis)
-        m = b*(s_inv.I*(basis.T*t))
-        posterior_alpha = pa = np.matrix(order/(2*m.T*m))
-        posterior_beta = pb = np.matrix(N/(2*(t.T-m.T*basis.T)*(t.T-m.T*basis.T).T))
-        if abs(pa-a)/abs(a) < .01 and abs(pb-b)/abs(b)<0.01:
+        m = b*s_inv.I*basis.T*t
+        posterior_alpha = pa = np.matrix(order/(m.T*m))[0,0]
+        posterior_beta = pb = np.matrix(N/np.sum(sq(t.T-m.T*basis.T)))[0,0]
+        if abs(posterior_alpha - alpha) < .01 and abs(posterior_beta - beta) < .01:
             end_while = True
         a = pa
         b = pb
@@ -45,19 +50,27 @@ for order in range(1, max_N+1):
     penalty = emn = b/2.*(t.T-mn.T*basis.T)*(t.T-mn.T*basis.T).T+a/2.*mn.T*mn
     E[order-1] = order/2.*np.log(a)+N/2.*np.log(b)-emn-1./(2*np.log(np.linalg.det(A)))-N/2.*np.log(2*np.pi)
     y = (mn.T*basis.T).T
+    all_y.append(y)
     axarr[0].plot(xs, y ,"g")
 
-x0label = "X"
-y0label = "Y"
+best_model = np.ma.argmax(E)
+x0label = x2label = "Input X"
+y0label = y2label = "Output Y"
 x1label = "Model Order"
 y1label = "Score"
+plot.tight_layout()
 axarr[0].set_xlabel(x0label)
 axarr[0].set_ylabel(y0label)
 axarr[1].set_xlabel(x1label)
 axarr[1].set_ylabel(y1label)
+axarr[2].set_xlabel(x2label)
+axarr[2].set_ylabel(y2label)
 axarr[0].set_title("Bayesian model estimation using polynomial basis functions")
 axarr[0].plot(xaxis, ys, "b")
 axarr[0].plot(xs, t, "ro")
 axarr[1].set_title("Model Evidence")
 axarr[1].plot(E, "b")
+axarr[2].set_title("Best model, polynomial order $"+`best_model`+"$")
+axarr[2].plot(xs, t, "ro")
+axarr[2].plot(xs, all_y[best_model], "g")
 plot.show()
