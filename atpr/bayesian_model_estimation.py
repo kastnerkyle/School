@@ -22,8 +22,6 @@ def gen_polynomial(x, p):
 
 itr_upper_bound = 250
 all_y = []
-sq = lambda x: x**2
-sq = np.vectorize(sq)
 for order in range(1, max_N+1):
     m = np.zeros((order, 1))
     s = np.zeros((order, order))
@@ -32,17 +30,14 @@ for order in range(1, max_N+1):
     alpha = a = prior_alpha
     beta = b = prior_beta
     itr = 0
-    end_while = False
-    while not end_while and itr < itr_upper_bound:
+    while not itr < itr_upper_bound:
         itr += 1
         first_part = a*np.eye(order)
         second_part = b*(basis.T*basis)
         s_inv = a*np.eye(order)+b*(basis.T*basis)
         m = b*s_inv.I*basis.T*t
         posterior_alpha = pa = np.matrix(order/(m.T*m))[0,0]
-        posterior_beta = pb = np.matrix(N/np.sum(sq(t.T-m.T*basis.T)))[0,0]
-        if abs(posterior_alpha - alpha) < .01 and abs(posterior_beta - beta) < .01:
-            end_while = True
+        posterior_beta = pb = np.matrix(N/((t.T-m.T*basis.T)*(t.T-m.T*basis.T).T))[0,0]
         a = pa
         b = pb
     A = a*np.eye(order)+b*(basis.T)*basis
@@ -54,6 +49,7 @@ for order in range(1, max_N+1):
     axarr[0].plot(xs, y ,"g")
 
 best_model = np.ma.argmax(E)
+#print E
 x0label = x2label = "Input X"
 y0label = y2label = "Output Y"
 x1label = "Model Order"
