@@ -12,21 +12,26 @@ parser.add_argument("user", help="Path to user file")
 
 try:
     args = parser.parse_args()
-    print args
 except SystemExit:
     parser.print_help()
     sys.exit()
 
-def get_JSON_data(filepath, key, prev_data={}):
+def get_JSON_data(filepath, key, sub_key="business_id", prev_data={}):
     with open(filepath) as f:
-        prev_data[key] = []
+        prev_data[key] = {}
         for line in f:
-            prev_data[key].append(line)
+            converted_json = json.loads(line)
+            prev_data[key][converted_json[sub_key]] = converted_json
     return prev_data
 
 all_data = {}
-all_data = get_JSON_data(args.business, "business", prev_data=all_data)
-all_data = get_JSON_data(args.checkin, "checkin", prev_data=all_data)
-all_data = get_JSON_data(args.review, "review", prev_data=all_data)
-all_data = get_JSON_data(args.user, "user", prev_data=all_data)
-print all_data.keys()
+all_data = get_JSON_data(args.business, "business", sub_key="business_id" ,prev_data=all_data)
+all_data = get_JSON_data(args.checkin, "checkin", sub_key="business_id", prev_data=all_data)
+all_data = get_JSON_data(args.review, "review", sub_key="business_id", prev_data=all_data)
+all_data = get_JSON_data(args.user, "user", sub_key="user_id", prev_data=all_data)
+print "Loaded all datasets"
+
+all_business_ids = all_data["business"].keys()
+print all_data["business"][all_business_ids[0]]
+print all_data["checkin"][all_business_ids[0]]
+print all_data["review"][all_business_ids[0]]
