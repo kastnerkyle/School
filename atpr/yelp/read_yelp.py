@@ -3,6 +3,7 @@ import json
 import matplotlib.pyplot as plot
 import sys
 import argparse
+import sqlite3 as lite
 
 parser = argparse.ArgumentParser(description="Read in Yelp data (JSON formatted)")
 parser.add_argument("business", help="Path to business file containing Yelp JSON data")
@@ -30,6 +31,8 @@ all_data = get_JSON_data(args.checkin, "checkin", sub_key="business_id", prev_da
 all_data = get_JSON_data(args.review, "review", sub_key="business_id", prev_data=all_data)
 all_data = get_JSON_data(args.user, "user", sub_key="user_id", prev_data=all_data)
 print "Loaded all datasets"
+
+
 
 all_business_ids = all_data["business"].keys()
 print all_data["business"][all_business_ids[0]]
