@@ -93,6 +93,13 @@ def KPMF(input_matrix, approx=50, iterations=30, learning_rate=.001, adjacency_w
     #[1 1 1 0]
     #[0 1 1 1]
     #[0 0 1 1]
+    print "Running KPMF with:"
+    print "learning rate=" + `l`
+    print "bandwidth=" + `bw`
+    print "beta=" + `b`
+    print "approximation rank=" + `K`
+    print "iterations=" + `R`
+    print ""
     CU = sp.diags([1]*(2*bw+1),range(-bw,bw+1),shape=(N,N)).todense()
     DU = np.diagflat(np.sum(CU,1))
     CV = sp.diags([1]*(2*bw+1),range(-bw,bw+1),shape=(M,M)).todense()
@@ -120,6 +127,18 @@ def get_RMSE(A,A_):
     e = np.mean((A1d-A_1d)**2)
     return np.sqrt(e)
 
+def combine(A,A_):
+    out = np.zeros(A.shape)
+    N = A.shape[0]
+    M = A.shape[1]
+    for i in xrange(N):
+        for j in xrange(M):
+            if A[i,j] == 0:
+                out[i,j] = A_[i,j]
+            else:
+                out[i,j] = A[i,j]
+    return out
+
 #Rework of lena example
 #from https://gist.github.com/thearn/5424219
 #Sparse lena
@@ -139,6 +158,10 @@ RMSE = get_RMSE(origA,A_)
 plot.title("Low Rank SVD (full matrix)\nRMSE=" + `RMSE`)
 plot.imshow(A_, cmap=cm.gray)
 plot.savefig("SVD_full_approx_"+`K`+".png")
+plot.figure()
+plot.title("Combined Low Rank SVD (full matrix)\nRMSE=" + `RMSE`)
+plot.imshow(combine(A,A_), cmap=cm.gray)
+plot.savefig("CombinedSVD_full_approx_"+`K`+".png")
 
 #Make lena sparse matrix setup, sparseness is the percentage of deleted pixels
 sparseness = .75
@@ -161,6 +184,10 @@ RMSE = get_RMSE(origA,A_)
 plot.title("Low Rank SVD\nRMSE="+`RMSE`)
 plot.imshow(A_, cmap=cm.gray)
 plot.savefig("SVD_sparse_approx_"+`K`+".png")
+plot.figure()
+plot.title("Combined Low Rank SVD\nRMSE="+`RMSE`)
+plot.imshow(combine(A,A_), cmap=cm.gray)
+plot.savefig("CombinedSVD_sparse_approx_"+`K`+".png")
 
 #Keeping learning rate constant for all PMF examples
 l = 0.001
@@ -176,6 +203,10 @@ for b in [0.,.25,.5,.75,1.]:
     plot.title("PMF, $\lambda$=" + `b` + "\nRMSE=" + `RMSE`)
     plot.imshow(A_, cmap=cm.gray)
     plot.savefig("PMF_b_"+`int(10*b)`+".png")
+    plot.figure()
+    plot.title("Combined PMF, $\lambda$=" + `b` + "\nRMSE=" + `RMSE`)
+    plot.imshow(combine(A,A_), cmap=cm.gray)
+    plot.savefig("CombinedPMF_b_"+`int(10*b)`+".png")
 
 #Sparse matrix, kernelized probabilistic matrix
 #Save RMSE as tuple of 3 values (b,w,RMSE)
@@ -190,6 +221,10 @@ for w in [0,4,10,20,40]:
         plot.title(r"Kernelized PMF, $\beta$=" + `b` + ", width=" + `w`+ "\nRMSE=" + `RMSE`)
         plot.imshow(A_, cmap=cm.gray)
         plot.savefig("KPMF_w"+`w`+"_b_"+`int(10*b)`+".png")
+        plot.figure()
+        plot.title(r"Combined KPMF, $\beta$=" + `b` + ", width=" + `w`+ "\nRMSE=" + `RMSE`)
+        plot.imshow(combine(A,A_), cmap=cm.gray)
+        plot.savefig("CombinedKPMF_w"+`w`+"_b_"+`int(10*b)`+".png")
     KPMF_RMSE.append((w,tuple(blist)))
 
 colors=['r','b','g','c','m','k']
