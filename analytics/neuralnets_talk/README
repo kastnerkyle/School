@@ -1,0 +1,14 @@
+To view these notebooks, with ipython installed, type the following command in the neuralnets_talk/ directory:
+ipython notebook --pylab inline
+
+To get ipython, try:
+pip install ipython
+
+You may need to run this as admin, like so:
+sudo pip install ipython
+
+If this fails, run the command below (on Ubuntu):
+sudo apt-get install python-pip
+
+http://ipython.org/install.html
+for other installation instructions
