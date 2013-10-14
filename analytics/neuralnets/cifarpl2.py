@@ -46,7 +46,7 @@ trainer = sgd.SGD(learning_rate=.01,
 
 watcher = best_params.MonitorBasedSaveBest(
     channel_name="output_misclass",
-    save_path="mnistpl2_best.pkl")
+    save_path="cifarpl2_best.pkl")
 
 experiment = Train(dataset=trn,
                    model=ann,
