@@ -10,9 +10,7 @@ from itertools import cycle
 from sklearn.utils import check_random_state
 from sklearn.metrics.pairwise import euclidean_distances
 
-
 class FuzzyKMeans(KMeans):
-
     def __init__(self, k, m=2, max_iter=100, random_state=0, tol=1e-4):
         """
         m > 1: fuzzy-ness parameter
@@ -60,26 +58,27 @@ class FuzzyKMeans(KMeans):
 
         return self
 
-digits = load_digits()
-X = scale(digits.data)
-y = digits.target
-pca = PCA(n_components=2)
-pca.fit(X)
-reduced = pca.transform(X)
-km = KMeans(n_clusters=10)
-km.fit(reduced)
-km_cent = km.cluster_centers_
-fcm = FuzzyKMeans(k=10, m=3)
-fcm.fit(reduced)
-fcm_cent = fcm.cluster_centers_
-colors = cycle('bgrcmyk')
-for t, col in zip(set(y), colors):
-    plt.scatter(reduced[y == t, 0], reduced[y == t, 1],
-                c=col, marker='o', label=str(t), alpha=.2)
-plt.scatter(km_cent[:, 0], km_cent[:, 1], c="darkred", s=50,
-            marker='o', label="kmeans")
-plt.scatter(fcm_cent[:, 0], fcm_cent[:, 1], c="darkblue", s=50,
-            marker='o', label="fuzzy")
-plt.title("Clustered Digits")
-plt.legend()
-plt.show()
+if __name__ == "__main__":
+    digits = load_digits()
+    X = scale(digits.data)
+    y = digits.target
+    pca = PCA(n_components=2)
+    pca.fit(X)
+    reduced = pca.transform(X)
+    km = KMeans(n_clusters=10)
+    km.fit(reduced)
+    km_cent = km.cluster_centers_
+    fcm = FuzzyKMeans(k=10, m=3)
+    fcm.fit(reduced)
+    fcm_cent = fcm.cluster_centers_
+    colors = cycle('bgrcmyk')
+    for t, col in zip(set(y), colors):
+        plt.scatter(reduced[y == t, 0], reduced[y == t, 1],
+                    c=col, marker='o', label=str(t), alpha=.2)
+    plt.scatter(km_cent[:, 0], km_cent[:, 1], c="darkred", s=50,
+                marker='o', label="kmeans")
+    plt.scatter(fcm_cent[:, 0], fcm_cent[:, 1], c="darkblue", s=50,
+                marker='o', label="fuzzy")
+    plt.title("Clustered Digits")
+    plt.legend()
+    plt.show()
