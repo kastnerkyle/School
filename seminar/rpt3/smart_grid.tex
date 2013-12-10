@@ -1,0 +1,65 @@
+\documentclass[9pt]{article}
+\usepackage{graphicx}
+\usepackage[margin=0.5in]{geometry}
+\setlength{\parindent}{0cm}
+
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true
+  tabsize=3
+}
+
+\begin{document}
+
+\title{Managing Demand Response and Renewables in Smart Grid}
+\author{Kyle Kastner}
+
+\maketitle
+
+\subsection*{Presenter}
+Dr. Nikolaos Gatsis 
+\subsection*{What is the research trying to do?}
+Dr. Gatsis' research is focused on smart grid scheduling using convex optimization techniques.
+\subsection*{Articulate the objectives using absolutely no jargon}
+Scheduling of smart appliances is a critical objective for the "smart grid", and is crucial for future growth.
+\subsection*{How is it done today, and what are the limits of current practice?}
+Currently, no scheduling at all is performed (at least at the grid level), which results in 
+huge amounts of inefficiency and waste for both consumers and producers of electrical power.
+\subsection*{What's new in the approach and why do we think it will be successful?}
+This scheduling is currently done using convex optimization techniques, built from special models
+for different types of devices.While convex methods may not fully cover all the problems, they are
+a very good start for stepping into the future of electrical distribution.
+\subsection*{Who cares?}
+More efficient electrical distribution affects every single person who uses electricity, as reducing electrical waste
+can save money for every customer.
+\subsection*{If successful, what difference will it make?}
+We will be able to use electrical energy more efficiently, reducing fossil fuel consumption, saving 
+costs in both infrastructure and bills. It also increases the effectiveness of green energy sources.
+\subsection*{What are the risks and the payoffs?}
+This research is fairly low risk, as there is little existing literature. The payoff may be enormous,
+if a highly efficient scheduling algorithm is created, tested, and adopted in industry.
+\subsection*{How much will it cost?}
+Simulated testing of this research will cost nearly nothing, as the improvements are algorithmic.
+\subsection*{Is it economically feasible?}
+It will be many years before a solution is implemented, and current limitations for the smart grid are 
+lack of infrastructure, complex politics, and consumer buy-in. However, this research is important
+in making sure that good technical solutions are available when these other issues are solved.
+\end{document}
