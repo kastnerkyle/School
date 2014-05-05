@@ -1,0 +1,284 @@
+\documentclass[conference]{IEEEtran}
+
+\begin{document}
+%
+% paper title
+% can use linebreaks \\ within to get better formatting as desired
+\title{Memory Architectures and Caching Techniques for GPU Computing}
+
+% author names and affiliations
+% use a multiple column layout for up to three different
+% affiliations
+\author{\IEEEauthorblockN{Kyle Kastner}
+\IEEEauthorblockA{School of Electrical and\\Computer Engineering\\
+University of Texas - San Antonio\\
+San Antonio, Texas 78240\\
+Email: kastnerkyle@gmail.com}}
+\maketitle
+\begin{abstract}
+Memory caching and architectures are vital to the 
+performance of modern computers. One of the key types of processors for high
+performance computing and machine learning are Graphics Processor Units (GPU).
+These specialized coprocessors are excellent for high-throughput, parallel
+floating point computations, and are often used in high performance computing
+(HPC) applications. This paper will form a review of three papers: 
+\emph{Unifying Primary Cache, Scratch, and Register Memories in a Throughput
+Processor}, \emph{A Detailed GPU Cache Model Based on Reuse Distance Theory}, 
+and \emph{3D GPU Architecture using Cache Stacking: Performance, Cost, Power
+and Thermal analysis}. These papers review a wide variety of topics related to
+GPU memory, and also forshadow one of the key future directions for GPU
+architectures - stacked (3D) processors and caches. 
+\end{abstract}
+\IEEEpeerreviewmaketitle
+
+\section{Introduction}
+GPU processing has enabled a wide variety of advances in scientific simulation,
+computer graphics, and high perfromance computing, largely driven by the need
+for highly parallel floating point mathematics. Thoug GPUs were originally
+developed in order to provide dedicated processing for graphics rendering in
+computer games, they have since been refocused for more general applications by
+one of the leading GPU manufacturers, NVidia. By releasing a dedicated
+programming language, called CUDA, which allows programminers to write custom
+code for GPUs, NVidia effectively created a new market for software driven 
+heavy computational hardware. Converting the underlying architectures from 
+"graphics specific" to general computation has not been an easy feat, though 
+NVidia's future releases will have unified the Tegra (cellphone, tablet,
+and basic laptops), and Kepler (workstations, larger standalone units) 
+architectures, which should allow programmers to release the same
+code on a multitude of platforms. The following papers detail a few advances
+which may further the improvement of these devices in our computers, laptops, 
+tablets, and cellphones \cite{gtc}.
+
+\section{Overview of GPU Structure}
+\subsection{Compute Structure}
+The GPU features a multilevel, hierarchical structure. 
+The smallest building block is called a \emph{thread}, several of which 
+(typically 32) in turn make up a \emph{warp}. One or more warps can be used to
+create a \emph{thread block}. Several thread blocks form a \emph{grid} 
+\cite{cuda}. The GPU is able to independently schedule warps, in order
+to maximize throughput by pipelining results together as they are fed
+through the ALU, load-store, and special function units (SFU), which are
+pipelined units which cache multiple outputs \cite{whitepaper}. 
+They function in a similar manner as other superscalar architectures 
+which have been discussed in class so far, except that double-precision
+floating point operations are first-class citizens in the Kepler architecture
+architecture \cite{notes}. One of the primary optimizations for GPU processing
+is to maximize the number of active threads per warp, since warps are always
+fully used - meaning that 33 threads will use two warps, one of which is 
+fully utilized (32 threads), while the other has 31 masked (inactive) threads.
+By utilizing all threads in a warp, throughput can be increased.
+
+\subsection{Memory Structure}
+There are several layers of memory sharing in this hierarchical structure. Much
+in the same way that some levels of cache are shared between processors in
+modern multi-core CPUs, the GPU also features meltiple levels of shared 
+memory. In the GPU, each thread possesses its own private 
+local memory. Each thread block possess a shared memory for sharing of data, 
+results, and communications. The GPU also possesses a third, global memory 
+which is shared between all thread blocks.In addition, the GPU must get it's 
+data via transport from the CPU, which means that CPU caches, memory, and hard
+disk can also play the role of secondary caching for the GPU, though access
+time is greatly increased due to PCIe bus transfer delays.
+
+\section{Cache Optimization for Throughput Processors}
+\subsection{Overview}
+The first paper \cite{throughput} describes a method for optimizing throughput 
+in GPUs, by allowing dynamic reconfiguration of the allocation between
+registers, cache, and scratchpad (shared memory) depending on workload type.
+Current GPUs have fixed allocation limits for these memories, which the authors
+show severely hinders throughput for certain workloads, as well as increasing 
+energy costs. Though it may seem that register memory should be very different
+than scratchpad and cache, in a GPU the registers are built from SRAM, and are
+constructed in a way that is very similar to the aforementioned memories. Using
+a two-level warp scheduler and a software controlled register hierarchy, the
+authors show a range of performance improvements, with the largest gains coming
+from applications with highly unbalanced work-types, which are misaligned with
+current fixed-allocation schemes. 
+
+\subsection{Application Characterization}
+The authors break GPU applications into 4 primary categories:
+\begin{itemize}
+    \item Register usage
+    \item Shared memory usage
+    \item Cacheable memory usage
+    \item Balanced memory usage
+\end{itemize}
+Of these 4 types, balanced memory usage programs fit closest to the current
+memory setup for GPUs, while each of the other program types need a greater
+amount of memory allocated for their respective memory types 
+(register|shared|cacheable) than the others. The authors list a table of 
+programs which feature particular uses of GPU memory.
+Notable register usage programs include DGEMM (key component of linear 
+algebra programs) and PCR (tridiagonal solver). Cache limited programs
+include MatrixMul (matrix multiply), VectorAdd (vector addition), and Backprop
+(neural network training algorithm). Shared memory decomposition programs 
+include lu (LU decomposition), while balanced programs include functions 
+related to cryptography (AES, SobolQRNG), linear algebra (SGEMV), and signal
+processing (DWT, DCT). It is easy to see why a dynamically reconfigurable
+memory architecture could be useful, as these algorithms are often tied 
+together in order to form a solution pipeline for a given application.
+
+\subsection{Microarchitecture}
+The proposed microarchitecture unifies the 32 independent register banks,
+shared memory banks, and cache banks of the baseline architecture (1 each 
+per thread in a warp). Rather, there are a total of 32 banks per streaming
+multiprocessor (SM) in order to keep bandwidth the same. The key enabling
+technology for the unified cache is a software controlled register file
+hierarchy. By allocating using an automated algorithm to allocate space, 
+the authors are able to more effectively utilize GPU processing. 
+The parameters of this algorithm are listed here: 
+\begin{itemize}
+    \item Register. Compiler calculated the number of registers 
+        required per thread to avoid spills.
+    \item Shared. Programmer specifies shared memory per thread.
+    \item Number of Threads. Number of threads is calculated from
+        the number of registers, amount of shread memory, and overall 
+        capacity.
+    \item Cache. Any remaining memory is used as cache.
+\end{itemize}
+
+\subsection{Conclusion}
+The authors showed a performance improvement of up to 71\%, as well as energy
+reduction up to 33\%, with a worst case running time penalty of ~1\%.
+By making processor storage more flexible GPUs should be able to perform a 
+wider array of tasks, as well as being more adaptable to a variety of workloads
+without programmer optimization and tuning when transferring to newer 
+architectures.
+
+\section{A Detailed GPU Cache Model Based on Reuse Distance Theory}
+\subsection{Overview}
+A more optimal GPU cache model is described in \cite{cache}. Sequential
+processors often use reuse distance theory to model cache behavior. The authors
+have developed the necessary tool to apply this same theory to GPU behavior,
+taking into account the hierarchical nature of GPU caching, non-uniform latency,
+and cache associativity. Using tools built in C++ and integrated with the 
+Ocelot GPU emulator for this modeling, the authors optimized two models of
+cache configuration scoring mean absolute error of 6\% and 8\%.
+
+\subsection{Adjustments for Parallel Execution}
+The authors made the following adjustments in order to model the GPU cache.
+\begin{itemize}
+    \item Adjustment of reuse distance theory for parallel execution.
+    \item Memory latency, including a new type of miss called a 
+        \emph{latency miss}
+    \item Associativity modelling
+    \item Modeling the effects of miss status holding registers (MSHR)
+    \item Warp divergence, to account for the fact that different warps are 
+        scheduled independently
+\end{itemize}
+
+\subsection{Summary}
+The authors found that their improvements to the GPU cache model improved the
+mean absolute modeling error to 6-8\% for the tested computational loads. 
+Though this modeling is now outdated, since it was applied to the older Fermi
+architecture, much of their work on modelling and caching behavior for
+parallel execution in GPUs can also be applied to Kepler, AMD Radeon, 
+and ARM Mali (Xbox One) architectures as well. The key results from this paper
+are an open souce model for Fermi architectures \cite{gpumodel},
+and a relative ordering of importance for GPU modelling. Latency modelling
+showed improvement of 12.1\% to 6.4\%, cache associativity 9.6\% to 6.4\%,
+and a limited benefit from miss status holding registers (7.1\% to 6.4\%).
+
+\section{3D GPU Architecture using Cache Stacking: Performance, Cost, Power and
+Thermal Analysis}
+\subsection{Overview}
+The use of through silicon vias (TSV) coupled with low-power consumption chips
+and components, has led to a rise in 3D structures for computer hardware. By 
+utilizing a 3D arrangement, GPUs may be able to avoid one of their gretest 
+weaknesses - GPU cache sizes and the penalty of a GPU cache miss. With 
+CPU -> GPU transfer times in the hundreds of milliseconds, a cache miss in GPU
+can be absolutely devastating to performance, and is one of the primary areas
+where GPUs lack behind conventional multicore CPUs. Though 
+this paper is now fairly outdated \cite{cachestacking} (2009), and focused more
+on graphics pipelines than general computing,
+the technology described was also described as an enabling technology for
+chip design in \cite{gtc}, and there is no doubt that these techniques will
+be crucial to increasing the performance of GPUs (and indeed, CPUs)
+in the future. The formulas related to production costs are largely irrelevant,
+as these estimates were based on 65nm processes. However, the seciton on
+thermal performance is still important - as die sizes shrink, it only becomes
+more difficult to provide proper cooling.
+
+\subsection{Power/Thermal Issues}
+At the time of publication, the authors were unable to find any suitable power
+simulators for GPU architectures. Using a die area model developed for 65nm
+processes, coupled with power index assumptions (16000 W/Ghz * m\^2), power
+leakage assumptions, and hotspot simulation tools, the authors were able to 
+model their proposed 3D GPU design. Overall, MRAM and SRAM designs appear 
+largely comparable, with the MRAM designs performing slightly better due to
+less leakage power. 2 layer designs performed much, much more consistently
+as cache sizes increased from 16kB to 2MB. For very small, mini-L1 style caches,
+these results appear to show that a 1 layer cache would be sufficient from a 
+power perspective, but for any other use a 2 layer cache is preferable.
+
+\subsection{Conclusion}
+The authors investigated many aspects of 3D cache design. Though much of the 
+work, including the final simulated temperatures and power consumption are now
+outdated due to the changes from 65nm processes, the investigations of layered 
+caches and the benefits of MRAM are likely still true. The overall approach of 
+using TSVs to create 3D architectures is the current driving force behind 
+modern GPUs, and as long as designers can effectively minimize heat while 
+while surface area is reduced, these techniques should lead to a massive 
+increase in compute density.
+
+\section{Final Thoughts}
+The papers reviewed \cite{throughput}, \cite{cache}, \cite{cachestacking} each
+take a unique approach to optimizing GPU computing processes. Though the oldest
+paper \cite{cachestacking} is beginning to show its age, the concepts behind 
+power analysis of 3D architectures are absolutely vital. GPU and CPU production
+processes are increasingly moving to 3D techniques using TSVs, and knowing how
+much heat must be dispersed is just as critical as in 2D designs. The paper on
+using reuse distance theory \cite{cache} developed several important concepts
+to move the concept of reuse distance from sequential processors to the 
+inherently parallel GPU platform. In addition, they also extended an existing 
+open source GPU simulation platform (Ocelot GPU simulator), as well as 
+releasing their custom C++ model for public use and scrutiny. The third paper 
+reviewed \cite{throughput} provided an interesting method for optimizing 
+throughput for variable types of process tasks. With the future of GPU 
+moving towards general high performance tasks, job specific cache optimization 
+will be critical to further adoption, but may come in conflict with current
+architecture assumptions. GPU computing is increasingly important in scientific
+work, and these advances will be vital improvements for better understanding
+our world.
+
+\begin{thebibliography}{1}
+\bibitem{gtc}
+Jen-Hsun Huang, \emph{GTC 2014 Keynote}, GPU Technology Conference, San Jose, CA.
+
+\bibitem{whitepaper}
+NVidia, \emph{Kepler GK110 Architecture Whitepaper}, retrieved May 2014.
+
+\bibitem{cuda}
+NVidia, \emph{CUDA Toolkit Documentation v 6.0}, retrieved May 2014.
+
+\bibitem{throughput}
+M. Gebhart, S. Keckler, B. Khailany, R. Krashinsky, W. Dally, 
+\emph{Unifying Primary Cache, Scratch, and Register File Memories in a 
+Throughput Processor}, MICRO 2012.
+
+\bibitem{cache}
+C. Nugteren, G. van der Braak, H. Corporaal, H. Bal, 
+\emph{A Detailed GPU cache model Based on Reuse Distance Theory}, 
+High Performance Computer Architecture, 2014.
+
+\bibitem{gpumodel}
+C. Nugteren, G. van der Braak, H. Corporaal, H. Bal, 
+\emph{Source code for 'A Detailed GPU cache model Based on Reuse Distance Theory'}
+ https://github.com/CNugteren/gpu-cache-model
+
+\bibitem{cachestacking}
+A. Al Maashri, G. Sun, X. Dong, V. Narayanan, Y. Xie,
+\emph{3D GPU Architecture using Cache Stacking: Performance, Cost, Power, and
+Thermal analysis}, IEEE International Conference on Computer Design ICCD 2009.
+
+\bibitem{notes}
+W. Lin, \emph{Course Notes for Computer Architecture, Spring 2014}, UTSA, 2014.
+\end{thebibliography}
+
+
+
+
+% that's all folks
+\end{document}
+
+
