@@ -1,0 +1,51 @@
+\documentclass{article}
+\begin{document}
+
+\title{Visual SLAM using Variational Autoencoders}
+\author{Kyle Kastner}
+
+\maketitle
+
+%\section*{Anomaly Detection on Vehicle Networks}
+%\subsection*{Kyle Kastner}
+\subsection*{Introduction}
+The goal of Simultaneous Localization and Mapping (SLAM) is to have a robot
+which is able to be placed in an unknown environment and learn the obstacles
+and potential paths available, while also learning where (in relation to these
+obstacles) it is. Without systems that can be placed in new environments and
+\emph{learn} to operate, many applications will remain off-limits to robotics.
+SLAM is an active research area in the robotics community, with several key
+components coming from research in statistics, computer vision, and
+machine learning. The proposed approach falls into the the category of
+monocular (single-camera) visual (video sensors only) SLAM. 
+
+\subsection*{Possible Data Sources}
+There are a wide variety of publicly available datasets for SLAM testing. Since
+this project will focus primarily on visual SLAM using a single camera, the
+dataset from \emph{M. Cummins and P. Newman, “Fab-map: Probabilistic localization
+and mapping in the space of appearance”} will provide an ideal 
+reference for prototyping and testing coded algorithsm. It is also planned to
+gather more data using a small quadrotor in a controlled environment, to test
+different strengths and weaknesses of the variational autoencoder versus the
+standard algorithms used in visual SLAM.
+
+\subsection*{Project Stages}
+\begin{itemize}
+    \item Implement basic variational autoencoder on faces or audio
+    \item Implement or find reference implementation of minimal SLAM pipeline
+    \item Extend into basic visual SLAM pipeline
+    \item Integrate variational autoencoder into pipeline, replacing necessary
+        parts of previous implementations
+    \item Compare the two visual SLAM implementations on several datasets
+\end{itemize}
+
+%\section*{Initial References and Links}
+%\begin{itemize}
+%    \item http://www.robots.ox.ac.uk/ActiveVision/Research/Projects/2003ajdi_monoslam/project.html
+%    \item http://www.cc.gatech.edu/~dellaert/FrankDellaert/Frank_Dellaert/Entries/2014/6/28_Visual_SLAM_Tutorial_at_CVPR.html
+%    \item https://openslam.org/ekfmonoslam.html
+%    \item http://www.cvc.uab.es/adas/projects/slam/?page_id=14
+%    \item http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6630554
+%    \item http://ocw.mit.edu/courses/aeronautics-and-astronautics/16-412j-cognitive-robotics-spring-2005/projects/1aslam_blas_repo.pdf
+%\end{itemize}
+\end{document}
